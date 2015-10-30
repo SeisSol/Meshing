@@ -43,7 +43,7 @@ Import('env')
 env.sourceFiles.extend([
   env.Object('main.cpp'),
   env.Object('SRF.cpp'),
-  env.Object('NRF.cpp'),
+  env.Object('NRFWriter.cpp'),
   env.Object('Map.cpp')
 ])
 
