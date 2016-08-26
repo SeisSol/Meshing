@@ -1,0 +1,3 @@
+[submodule "submodules/scons-tools"]
+	path = submodules/scons-tools
+	url = https://github.com/TUM-I5/scons-tools.git
