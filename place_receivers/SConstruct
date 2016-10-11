@@ -42,8 +42,7 @@ import os
 import libs
 
 env = Environment(
-  ENV = os.environ,
-  CXXFLAGS = '--std=c++11'
+  ENV = os.environ
 )
 env['CC'] = os.environ.get('CC', env['CC'])
 env['CXX'] = os.environ.get('CXX', env['CXX'])
