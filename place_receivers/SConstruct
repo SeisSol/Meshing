@@ -43,9 +43,10 @@ import libs
 
 env = Environment(
   ENV = os.environ,
-  CC = os.environ['CC'],
-  CXX = os.environ['CXX']
+  CXXFLAGS = '--std=c++11'
 )
+env['CC'] = os.environ.get('CC', env['CC'])
+env['CXX'] = os.environ.get('CXX', env['CXX'])
 
 # Add netCDF
 libs.find(env, 'netcdf')
