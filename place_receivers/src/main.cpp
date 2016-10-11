@@ -47,25 +47,16 @@
 int main(int argc, char** argv)
 {
   utils::Args args;
+  args.addOption("depth", 'd', "Distance of the receivers to the free surface");
   args.addOption("receivers", 'r', "Receiver locations");
   args.addOption("mesh", 'm', "Netcdf mesh file");
   args.addOption("output", 'o', "Receiver output file");
-	//~ args.addOption("mcs", 'm', "Proj.4 string that describes the mesh coordinate system (e.g. \"+proj=utm +zone=10 +datum=WGS84 +units=m +no_defs\").", utils::Args::Required, false);
-  //~ args.addOption("output", 'o', "Output file (.nrf)", utils::Args::Required, false);
-  //~ args.addOption("normalize-onset", 'n', "Subtract the minimum onset time from all onsets.", utils::Args::No, false);
-	//~ args.addOption("vcs", 'v', "Proj.4 string that describes the coordinate system for visualisation (defaults to geocentric, i.e. \"+proj=geocent +datum=WGS84 +units=m +no_def\").", utils::Args::Required, false);
-  //~ args.addOption("xdmf", 'x', "Output for visualisation (.xmf)", utils::Args::Required, false);
-  //~ 
-  //~ args.setCustomHelpMessage("\nWith rconv you may either convert a SRF file to a NRF file, which you can use as input in SeisSol.\n"
-                            //~ "In this case, give the options -i, -m, -o, and optionally -n.\n\n"
-                            //~ "You may also write a file which may be loaded in Paraview for visualisation of the SRF file.\n"
-                            //~ "In this case, give the options -i, -x, and optionally -v.\n\n"
-                            //~ "You may write both files simultaneously by giving all options.\n");
 
 	if (args.parse(argc, argv) != utils::Args::Success) {
     return -1;
   }
   
+  double depth = args.getArgument<double>("depth");
   std::string receiverFile = args.getArgument<std::string>("receivers");
   std::string meshFile = args.getArgument<std::string>("mesh");
   std::string receiverOutputFile = args.getArgument<std::string>("output");
@@ -82,8 +73,7 @@ int main(int argc, char** argv)
     }
 
     mesh.readPartition(p);
-    
-    setElevation(p, mesh, tree);
+    setElevation(p, depth, mesh, tree);
   }
 
   writeReceiverFile(tree, receiverOutputFile); 

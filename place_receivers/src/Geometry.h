@@ -43,7 +43,7 @@
 #include "Reader.h"
 #include "KDTree.h"
 
-void setElevation(int partition, Mesh const& mesh, KDTree& tree);
+void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree);
 
 
 #endif

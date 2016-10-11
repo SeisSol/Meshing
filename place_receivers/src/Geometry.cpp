@@ -66,6 +66,7 @@ struct Action {
   double dist[3];
   double faceNormal[3];
   double faceDist;
+  double depth;
   
   void determineNormals() {
     for (unsigned side = 0; side < 3; ++side) {
@@ -90,9 +91,9 @@ struct Action {
       a[d] = vertices[1].coords[d]-vertices[0].coords[d];
       b[d] = vertices[2].coords[d]-vertices[0].coords[d];
     }
-    faceNormal[0] = b[1]*a[2] - b[2]*a[1];
-    faceNormal[1] = b[2]*a[0] - b[0]*a[2];
-    faceNormal[2] = b[0]*a[1] - b[1]*a[0];
+    faceNormal[0] = a[1]*b[2] - a[2]*b[1];
+    faceNormal[1] = a[2]*b[0] - a[0]*b[2];
+    faceNormal[2] = a[0]*b[1] - a[1]*b[0];
     faceDist = faceNormal[0] * vertices[0].coords[0] + faceNormal[1] * vertices[0].coords[1] + faceNormal[2] * vertices[0].coords[2];
   }
   
@@ -104,16 +105,22 @@ struct Action {
     
     if (inside) {
       receiver.z = (faceDist - faceNormal[0] * receiver.x - faceNormal[1] * receiver.y) / faceNormal[2];
+      if (faceNormal[2] >= 0) {
+        receiver.z -= depth;
+      } else {
+        receiver.z += depth;
+      }
     }
   }
 };
 
-void setElevation(int partition, Mesh const& mesh, KDTree& tree) {
+void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree) {
   for (unsigned element = 0; element < mesh.elementSize[partition]; ++element) {
     for (unsigned face = 0; face < 4; ++face) {
       // Consider only free surface boundaries
       if (mesh.elementBoundaries[4*element + face] == 1) {
         Action act;
+        act.depth = depth;
         Support sup;
         for (unsigned node = 0; node < 3; ++node) {
           double* vbegin = &mesh.vertexCoordinates[3*mesh.elementVertices[ 4*element + FACE2NODES[face][node] ]];

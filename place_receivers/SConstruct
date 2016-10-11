@@ -38,9 +38,14 @@
 # @section DESCRIPTION
 #
 
+import os
 import libs
 
-env = Environment()
+env = Environment(
+  ENV = os.environ,
+  CC = os.environ['CC'],
+  CXX = os.environ['CXX']
+)
 
 # Add netCDF
 libs.find(env, 'netcdf')
