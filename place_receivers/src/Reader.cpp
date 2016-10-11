@@ -78,12 +78,14 @@ void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
     if (!std::isnan(point->z)) {
       out << point->x << " " << point->y << " " << point->z << std::endl;
     } else {
-      std::cout << "Warning: Did not find elevation for receiver at (" << point->x << ", " << point->y << ")." << std::endl;
+      std::cerr << "Warning: Did not find elevation for receiver at (" << point->x << ", " << point->y << ")." << std::endl;
       ++failureCounter;
     }
   }
 
-  std::cout << failureCounter << " points were not written due to missing elevation." << std::endl;
+  if (failureCounter > 0) {
+    std::cerr << failureCounter << " points were not written due to missing elevation." << std::endl;
+  }
 }
 
 void check_err(const int stat, const int line, const char *file) {
