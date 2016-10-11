@@ -25,4 +25,4 @@ place_receivers -d DEPTH -r RECEIVERS -m MESH -o OUTPUT
 
 Limitations
 -----------
-The tools does only work if faces with free surface boundary condition are present and if their normals look in +z or -z direction (this is usually the case if free surfaces are topography and e.g. enu, ned, seu axis orientations are used).
+The tools does only work if faces with free surface boundary condition are present and if their normals look in +z or -z direction. (This is usually the case if free surfaces due to topography and e.g. enu, ned, seu axis orientations are used.) That is, the tool fails if all respective faces have normals with z=0.
