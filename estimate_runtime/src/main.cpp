@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   args.addOption("node-performance", 'n', "Performance of a node in GFLOPS");
   args.addOption("p-wave-velocity", 'p', "P-wave velocity (m/s)", utils::Args::Required, false);
   args.addOption("CFL", 'c', "CFL number", utils::Args::Required, false);
-  args.addOption("order", 'o', "Convergence order", utils::Args::Required, false);
+  args.addOption("order", 'o', "Convergence order");
   args.addOption("rate", 'r', "Clusterd lts rate", utils::Args::Required, false);
   args.addOption("final-time", 't', "Final simulation time", utils::Args::Required, false);
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   double nodePerformance = args.getArgument<double>("node-performance");
   double pVelocity = args.getArgument<double>("p-wave-velocity", 6000.0);
   double cfl = args.getArgument<double>("CFL", 0.5);
-  unsigned order = args.getArgument<unsigned>("order", 6);
+  unsigned order = args.getArgument<unsigned>("order");
   unsigned rate = args.getArgument<unsigned>("rate", 2);
   double finalTime = args.getArgument<unsigned>("final-time", 1.0);
   
@@ -61,7 +61,8 @@ int main(int argc, char** argv)
   double minInsphereRadius = std::numeric_limits<double>::max();
   double minTimestep = std::numeric_limits<double>::max();
   double maxTimestep = std::numeric_limits<double>::min();
-  for (unsigned p = 0; p < reader.partitions; ++p) {    
+  for (unsigned p = 0; p < reader.partitions; ++p) {
+    std::cout << "Reading partition " << p+1 << "..." << std::endl; 
     reader.readPartition(p);
     numberOfElements += reader.elementSize[p];
 
@@ -96,9 +97,11 @@ int main(int argc, char** argv)
     ++clusterHistogram[cluster];
   }
   
-  unsigned numberOfUpdates = 0;
+  double numberOfUpdates = 0;
   double clusterTimestep = minTimestep;
+  unsigned cluster = 0;
   for (std::vector<unsigned>::const_iterator it = clusterHistogram.begin(); it != clusterHistogram.end(); ++it) {
+    std::cout << "Cluster " << cluster++ << " updates (" << *it << " elements): " << std::ceil(finalTime / clusterTimestep) << std::endl;
     numberOfUpdates += (*it) * std::ceil(finalTime / clusterTimestep);
     clusterTimestep *= rate;
   }
