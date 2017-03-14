@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/python
 ##
 # @file
 # This file is part of SeisSol.
@@ -38,10 +38,27 @@
 # @section DESCRIPTION
 #
 
-Import('env')
+import os
+import libs
 
-sourceFiles = ['main.cpp', 'common/PartitionReader.cpp', 'Graph.cpp']
-for f in sourceFiles:
-	env.sourceFiles.append(env.Object(f))
+env = Environment(
+  ENV = os.environ
+)
+env['CC'] = os.environ.get('CC', env['CC'])
+env['CXX'] = os.environ.get('CXX', env['CXX'])
+
+# Add netCDF
+libs.find(env, 'netcdf')
+
+# Add include path
+env.Append(CPPPATH=['#/src', '#/../submodules/', '#/../submodules/glm/'])
+
+buildDir = 'build'
+
+env.sourceFiles = []
 
 Export('env')
+SConscript('src/SConscript', variant_dir='#/build/'+buildDir, src_dir='#/', duplicate=0)
+Import('env')
+
+env.Program('#/build/estimate_runtime', env.sourceFiles)

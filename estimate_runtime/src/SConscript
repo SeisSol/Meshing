@@ -40,7 +40,7 @@
 
 Import('env')
 
-sourceFiles = ['main.cpp', 'common/PartitionReader.cpp', 'Graph.cpp']
+sourceFiles = ['main.cpp', 'common/PartitionReader.cpp']
 for f in sourceFiles:
 	env.sourceFiles.append(env.Object(f))
 

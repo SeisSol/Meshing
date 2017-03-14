@@ -2,7 +2,7 @@
 #include <set>
 #include <cstring>
 
-#include "PartitionReader.h"
+#include "common/PartitionReader.h"
 #include "Graph.h"
 
 void printCounter(std::string const& name, counter_t* counter, unsigned numPartitions)
