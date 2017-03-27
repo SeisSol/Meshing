@@ -140,10 +140,8 @@ int main(int argc, char* argv[])
 	int ncVarElemGroup;
 	bool hasGroup = false;
 	int ncResult = nc_inq_varid(ncFile, "element_group", &ncVarElemGroup);
-	if (ncResult != NC_ENOTVAR) {
-		//checkNcError(ncResult);
+	if (ncResult != NC_ENOTVAR)
 		hasGroup = true;
-	}
 
 	int ncVarVrtxSize;
 	nc_inq_varid(ncFile, "vertex_size", &ncVarVrtxSize);
@@ -197,7 +195,8 @@ int main(int argc, char* argv[])
 		<< outfilePrefixShort << "_connect.bin</DataItem>" << std::endl
 		<< "   </Topology>" << std::endl;
 
-	int fd = open((outfilePrefix+"_connect.bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+	int fd = open((outfilePrefix+"_connect.bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
+		S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
 
 	int* elements = new int[maxElements*4];
 	unsigned int vrtxIdStart = 0;
@@ -271,7 +270,8 @@ int main(int argc, char* argv[])
 		<< outfilePrefixShort << "_geometry.bin</DataItem>" << std::endl
 		<< "   </Geometry>" << std::endl;
 
-	fd = open((outfilePrefix+"_geometry.bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+	fd = open((outfilePrefix+"_geometry.bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
+		S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
 
 	float* vertices = new float[maxVertices*3];
 	for (size_t i = 0; i < partitions; i++) {
@@ -298,7 +298,8 @@ int main(int argc, char* argv[])
 		<< outfilePrefixShort << "_" << attributeName << ".bin</DataItem>" << std::endl
 		<< "   </Attribute>" << std::endl;
 
-	fd = open((outfilePrefix+"_"+attributeName+".bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+	fd = open((outfilePrefix+"_"+attributeName+".bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
+		S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
 
 	if (convertBoundaries) {
 		unsigned int* boundaries = new unsigned int[maxElements*4];
@@ -332,28 +333,31 @@ int main(int argc, char* argv[])
 			write(fd, partition, elementSize[i]*sizeof(int));
 		}
 
-		// TODO groups are currently missing
-// 		if (hasGroup) {
-// 			vtk << std::endl
-// 				<< "</DataArray>" << std::endl
-// 				<< "<DataArray Name=\"Group\" type=\"Int32\" Format=\"ascii\">" << std::endl;
-//
-// 			unsigned int* groups = new unsigned int[maxElements];
-// 			size_t start[3] = {0, 0};
-// 			size_t size[3] = {1, 0};
-// 			for (size_t i = 0; i < partitions; i++) {
-// 				for (size_t i = 0; i < partitions; i++) {
-// 					start[0] = i;
-// 					size[1] = elementSize[i];
-// 					nc_get_vara_uint(ncFile, ncVarElemGroup, start, size, groups);
-//
-// 					for (unsigned int j = 0; j < elementSize[i]; j++)
-// 						vtk << groups[j] << ' ';
-// 				}
-// 			}
-//
-// 			delete [] groups;
-// 		}
+		// Write groups if available
+		if (hasGroup) {
+			close(fd);
+
+			xdmfFile << "   <Attribute Name=\"group\" Center=\"Cell\">" << std::endl
+				<< "    <DataItem NumberType=\"Int\" Precision=\"4\" Format=\"Binary\" Dimensions=\"" << nelements << "\">"
+				<< outfilePrefixShort << "_group.bin</DataItem>" << std::endl
+				<< "   </Attribute>" << std::endl;
+
+			fd = open((outfilePrefix+"_group.bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
+				S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
+
+			int* groups = new int[maxElements];
+			size_t start[3] = {0, 0};
+			size_t size[3] = {1, 0};
+			for (size_t i = 0; i < partitions; i++) {
+				start[0] = i;
+				size[1] = elementSize[i];
+				nc_get_vara_int(ncFile, ncVarElemGroup, start, size, groups);
+
+				write(fd, groups, elementSize[i]*sizeof(int));
+			}
+
+			delete [] groups;
+		}
 	}
 
 	close(fd);
