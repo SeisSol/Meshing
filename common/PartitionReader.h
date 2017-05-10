@@ -54,6 +54,7 @@ public:
   int* elementBoundaries;
   int* elementVertices;
   int* elementNeighborRanks;
+  int* elementGroup;
   double* vertexCoordinates;
   
 private:
@@ -61,6 +62,7 @@ private:
 	int ncVarElemVertices;
 	int ncVarElemBoundaries;
 	int ncVarElemNeighborRanks;
+  int ncVarElemGroup;
 	int ncVarVrtxCoords;
 };
 

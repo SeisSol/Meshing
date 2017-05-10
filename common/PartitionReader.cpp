@@ -42,7 +42,7 @@
 #include <cstdio>
 #include <netcdf.h>
 
-void check_err(const int stat, const int line, const char *file) {
+static void check_err(const int stat, const int line, const char *file) {
   if (stat != NC_NOERR) {
     fprintf(stderr,"line %d of %s: %s\n", line, file, nc_strerror(stat));
     fflush(stderr);
@@ -89,6 +89,9 @@ PartitionReader::PartitionReader(std::string const& fileName){
 	stat = nc_inq_varid(ncid, "element_neighbor_ranks", &ncVarElemNeighborRanks);
   check_err(stat,__LINE__,__FILE__);
 
+	stat = nc_inq_varid(ncid, "element_group", &ncVarElemGroup);
+  check_err(stat,__LINE__,__FILE__);
+
   int ncVarVrtxSize;
 	stat = nc_inq_varid(ncid, "vertex_size", &ncVarVrtxSize);
   check_err(stat,__LINE__,__FILE__);
@@ -108,6 +111,7 @@ PartitionReader::PartitionReader(std::string const& fileName){
   elementBoundaries = new int[4*maxElements];
   elementVertices = new int[4*maxElements];
   elementNeighborRanks = new int[4*maxElements];
+  elementGroup = new int[maxElements];
 }
 
 PartitionReader::~PartitionReader() {
@@ -119,6 +123,7 @@ PartitionReader::~PartitionReader() {
   delete[] elementBoundaries;
   delete[] elementVertices;
   delete[] elementNeighborRanks;
+  delete[] elementGroup;
   delete[] vertexCoordinates;
 }
 
@@ -134,6 +139,9 @@ void PartitionReader::readPartition(int partition) {
   check_err(stat,__LINE__,__FILE__);
   
   stat = nc_get_vara_int(ncid, ncVarElemNeighborRanks, elementsStart, elementsSize, elementNeighborRanks);
+  check_err(stat,__LINE__,__FILE__);
+  
+  stat = nc_get_vara_int(ncid, ncVarElemGroup, elementsStart, elementsSize, elementGroup);
   check_err(stat,__LINE__,__FILE__);
   
   
