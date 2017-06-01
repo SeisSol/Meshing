@@ -21,9 +21,9 @@ void Graph::addEdge(unsigned fromNode, unsigned toNode)
   ++m_edges[fromNode * m_numberOfNodes + toNode];
 }
 
-void Graph::printDOT(char const* filename)
+void Graph::printDOT(std::string const& filename)
 {
-  FILE* fp = fopen(filename, "w");
+  FILE* fp = fopen(filename.c_str(), "w");
   fprintf(fp, "graph communication {\n");
   fprintf(fp, "overlap=scale;\n");
   fprintf(fp, "splines=true;\n");
@@ -51,5 +51,12 @@ void Graph::printDOT(char const* filename)
  
   fprintf(fp, "}\n");
   
+  fclose(fp);
+}
+
+void Graph::printMatrix(std::string const& filename)
+{
+  FILE* fp = fopen(filename.c_str(), "wb");
+  fwrite(m_edges, sizeof(counter_t), m_numberOfNodes * m_numberOfNodes, fp);
   fclose(fp);
 }

@@ -1,6 +1,8 @@
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
+#include <string>
+
 typedef unsigned long long counter_t;
 
 class Graph {  
@@ -13,7 +15,8 @@ public:
   ~Graph();
   
   void addEdge(unsigned fromNode, unsigned toNode);
-  void printDOT(char const* filename);
+  void printDOT(std::string const& filename);
+  void printMatrix(std::string const& filename);
 };
 
 #endif // GRAPH_H_

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <set>
 #include <cstring>
+#include <utils/args.h>
 
 #include "common/PartitionReader.h"
 #include "Graph.h"
@@ -19,12 +20,20 @@ void printCounter(std::string const& name, counter_t* counter, unsigned numParti
 
 int main(int argc, char** argv)
 {
-  if (argc < 2) {
-    std::cerr << "Usage: estimate_communication <mesh> [<graph>]" << std::endl;
+  utils::Args args;
+  args.addOption("dot", 'd', "Write dot file for visualisation.", utils::Args::Required, false);
+  args.addOption("matrix", 'm', "Write edge-cut matrix.", utils::Args::Required, false);
+  args.addAdditionalOption("mesh", "Mesh file");
+
+  if (args.parse(argc, argv) != utils::Args::Success) {
     return -1;
   }
-  
-  PartitionReader reader(argv[1]);
+
+  std::string meshFile = args.getArgument<std::string>("mesh");
+  std::string dotFile = args.getArgument<std::string>("dot");
+  std::string matrixFile = args.getArgument<std::string>("matrix");
+
+  PartitionReader reader(meshFile);
   
   counter_t totalEdgeCut = 0;
   counter_t totalCommVolume = 0;
@@ -61,8 +70,11 @@ int main(int argc, char** argv)
     totalCommVolume += commVolume[p];
   }
   
-  if (argc >= 3) {
-    edgeCutGraph.printDOT(argv[2]);
+  if (dotFile.size() > 0) {
+    edgeCutGraph.printDOT(dotFile);
+  }
+  if (matrixFile.size() > 0) {
+    edgeCutGraph.printMatrix(matrixFile);
   }
   
   printCounter("Edge cut", edgeCut, reader.partitions);
