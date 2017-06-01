@@ -29,9 +29,9 @@ int main(int argc, char** argv)
     return -1;
   }
 
-  std::string meshFile = args.getArgument<std::string>("mesh");
-  std::string dotFile = args.getArgument<std::string>("dot");
-  std::string matrixFile = args.getArgument<std::string>("matrix");
+  std::string meshFile = args.getAdditionalArgument<std::string>("mesh");
+  std::string dotFile = args.getArgument<std::string>("dot", "");
+  std::string matrixFile = args.getArgument<std::string>("matrix", "");
 
   PartitionReader reader(meshFile);
   
