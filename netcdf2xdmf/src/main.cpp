@@ -54,10 +54,13 @@
 #include "utils/path.h"
 #include "utils/stringutils.h"
 
+#include "easi/YAMLParser.h"
+
 int main(int argc, char* argv[])
 {
 	utils::Args args;
 	args.addOption("boundary", 'b', "Convert only boundary cells", utils::Args::No, false);
+	args.addOption("material", 'm', "Add material parameters to xdmf", utils::Args::Required, false);
 	args.addAdditionalOption("input", "The netCDF mesh file");
 	args.addAdditionalOption("output", "The generated XDMF file", false);
 
@@ -69,6 +72,7 @@ int main(int argc, char* argv[])
 	}
 
 	bool convertBoundaries = args.isSet("boundary");
+	std::string material = args.getArgument<std::string>("material", "");
 
 	// Get infile/outfile
 	std::string infile = args.getAdditionalArgument<std::string>("input");
@@ -358,6 +362,82 @@ int main(int argc, char* argv[])
 
 			delete [] groups;
 		}
+    
+    if (material.size() > 0) {     
+      easi::YAMLParser parser(3);
+      easi::Component* model = parser.parse(material);
+      
+      std::vector<std::string> paramNames{"lambda", "mu", "rho"};    
+
+      int fds[3];
+      for (unsigned d = 0; d < 3; ++d) {
+        xdmfFile << "   <Attribute Name=\"" << paramNames[d] << "\" Center=\"Cell\">" << std::endl
+          << "    <DataItem NumberType=\"Float\" Precision=\"8\" Format=\"Binary\" Dimensions=\"" << nelements << "\">"
+          << outfilePrefixShort << "_" << paramNames[d] << ".bin</DataItem>" << std::endl
+          << "   </Attribute>" << std::endl;
+
+        fds[d] = open((outfilePrefix+"_" + paramNames[d] + ".bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
+          S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
+      }
+      
+      easi::ArraysAdapter adapter(3);
+      double* parameters[3];
+      for (unsigned d = 0; d < 3; ++d) {
+        parameters[d] = new double[maxElements];
+        adapter.setBindingPoint(paramNames[d], d, parameters[d]);
+      }
+      
+      int* elements = new int[maxElements*4];
+      float* vertices = new float[maxVertices*3];
+      int* groups;
+      if (hasGroup) {
+        groups = new int[maxElements];
+      }
+      for (size_t i = 0; i < partitions; ++i) {
+        size_t startV[3] = {i, 0, 0}; size_t sizeV[3] = {1, elementSize[i], 4};
+        nc_get_vara_int(ncFile, ncVarElemVertices, startV, sizeV, elements);
+        size_t startE[3] = {i, 0, 0}; size_t sizeE[3] = {1, vertexSize[i], 3};
+        nc_get_vara_float(ncFile, ncVarVrtxCoords, startE, sizeE, vertices);
+        if (hasGroup) {
+          size_t startG[2] = {i, 0}; size_t sizeG[2] = {1, elementSize[i]};
+          nc_get_vara_int(ncFile, ncVarElemGroup, startG, sizeG, groups);
+        }
+
+        easi::Query query(elementSize[i], 3);
+        if (hasGroup) {
+          for (unsigned int j = 0; j < elementSize[i]; ++j) {
+            query.group(j) = groups[j];
+          }          
+        }
+        for (unsigned int j = 0; j < elementSize[i]; ++j) {
+          for (unsigned d = 0; d < 3; ++d) {
+            query.x(j,d) = 0.25f * vertices[ 3*elements[4*j] + d];
+          }
+          for (unsigned v = 1; v < 4; ++v) {
+            for (unsigned d = 0; d < 3; ++d) {
+              query.x(j,d) += 0.25f * vertices[ 3*elements[4*j+v] + d];
+            }
+          }
+        }
+        
+        model->evaluate(query, adapter);
+        
+        for (unsigned d = 0; d < 3; ++d) {
+          write(fds[d], parameters[d], elementSize[i]*sizeof(double));
+        }
+      }
+      delete [] elements;
+      delete [] vertices;
+      if (hasGroup) {
+        delete [] groups;
+      }
+      for (unsigned d = 0; d < 3; ++d) {
+        delete[] parameters[d];
+        close(fds[d]);
+      }
+      
+      delete model;
+    }
 	}
 
 	close(fd);
