@@ -63,16 +63,32 @@ vars.SetCompiler(env)
 
 # Add netCDF
 libs.find(env, 'netcdf')
+hasAsagi = libs.find(env, 'asagi', required=False, parallel=False)
+if hasAsagi:
+  env.Append(CPPDEFINES=['USE_ASAGI']) 
 
 env.Tool('cmake')
-yaml_cpp = env.CMake( source=Glob('submodules/yaml-cpp/src/*.cpp') + Glob('submodules/yaml-cpp/src/contrib/*.cpp'),
-                      target=['#/build/yaml-cpp/libyaml-cpp.a'],
+
+# yaml-cpp
+yaml_cpp = env.CMake( source=[Glob(path + '*/.cpp') for path, dirs, files in os.walk('submodules/yaml-cpp/src')],
+                      target=['#/build/external/yaml-cpp/libyaml-cpp.a'],
                       CMakeProject = Dir('submodules/yaml-cpp'),
                       CMakeOpts = ['-DYAML_CPP_BUILD_TOOLS=no',
                                    '-DCMAKE_CXX_COMPILER=' + env['CXX']])
+env.Append(CPPPATH=['#/submodules/yaml-cpp/include'])
+env.Append(LIBS=yaml_cpp)
+
+# impalajit
+impalajit = env.CMake( source=[Glob(path + '*/.cc') for path, dirs, files in os.walk('submodules/ImpalaJIT')],
+                       target=['submodules/ImpalaJIT/lib/libimpalajit.a'],
+                       CMakeProject = Dir('submodules/ImpalaJIT'),
+                       CMakeBuildDir = Dir('#/build/external/impalajit/'),
+                       CMakeOpts = ['-DCMAKE_CXX_COMPILER=' + env['CXX']])
+env.Append(CPPPATH=['#/submodules/ImpalaJIT/include'])
+env.Append(LIBS=impalajit)
 
 # Add include path
-env.Append(CPPPATH=['#/src', '#/submodules/yaml-cpp/include', '#/submodules/easi'])
+env.Append(CPPPATH=['#/src', '#/submodules/yaml-cpp/include', '#/submodules/easi/include'])
 env.Append(LIBS=yaml_cpp)
 
 buildDir = 'build'
@@ -85,3 +101,4 @@ Import('env')
 
 nc2xdmf = env.Program('#/build/netcdf2xdmf', env.sourceFiles)
 env.Depends(nc2xdmf, yaml_cpp)
+env.Depends(nc2xdmf, impalajit)

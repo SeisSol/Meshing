@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 {
 	utils::Args args;
 	args.addOption("boundary", 'b', "Convert only boundary cells", utils::Args::No, false);
-	args.addOption("material", 'm', "Add material parameters to xdmf", utils::Args::Required, false);
+	args.addOption("materialFile", 'm', "Add material parameters to xdmf", utils::Args::Required, false);
 	args.addAdditionalOption("input", "The netCDF mesh file");
 	args.addAdditionalOption("output", "The generated XDMF file", false);
 
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 	}
 
 	bool convertBoundaries = args.isSet("boundary");
-	std::string material = args.getArgument<std::string>("material", "");
+	std::string material = args.getArgument<std::string>("materialFile", "");
 
 	// Get infile/outfile
 	std::string infile = args.getAdditionalArgument<std::string>("input");
@@ -380,11 +380,11 @@ int main(int argc, char* argv[])
           S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
       }
       
-      easi::ArraysAdapter adapter(3);
+      easi::ArraysAdapter adapter;
       double* parameters[3];
       for (unsigned d = 0; d < 3; ++d) {
         parameters[d] = new double[maxElements];
-        adapter.setBindingPoint(paramNames[d], d, parameters[d]);
+        adapter.addBindingPoint(paramNames[d], parameters[d]);
       }
       
       int* elements = new int[maxElements*4];
