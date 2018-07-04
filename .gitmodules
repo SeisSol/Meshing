@@ -16,3 +16,6 @@
 [submodule "submodules/ImpalaJIT"]
 	path = submodules/ImpalaJIT
 	url = https://github.com/Manuel1605/ImpalaJIT.git
+[submodule "place_receivers/submodules/PUML"]
+	path = place_receivers/submodules/PUML
+	url = https://github.com/TUM-I5/PUML2.git
