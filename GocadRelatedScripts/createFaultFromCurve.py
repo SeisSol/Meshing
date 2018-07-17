@@ -6,7 +6,8 @@ import os
 import argparse
 parser = argparse.ArgumentParser(description='create curved fault geometry from pl file')
 parser.add_argument('filename', help='fault trace (*.pl) or ascii file (2 or 3 columns)')
-parser.add_argument('dip', help='dip value or name of ascii file with 2 columns depth dip')
+parser.add_argument('dipType', type=int, help='0: constant dip, 1: depth dependant dip, described by an ascii file, 2: dip variying along the length of the trace')
+parser.add_argument('dipDesc', help='dipType=0: dip value dipType=1 name of ascii file with 2 columns (depth, dip). dipType=2: idem with (relative length[0-1], dip)')
 parser.add_argument('--constV1',  dest='constV1', action='store_true' , default = False, help='dip horizontal direction from 2 extreme points of pl file (else changing along trace)')
 parser.add_argument('--translate', nargs=2, metavar=('x0', 'y0'), default = ([0,0]), help='translates all nodes by (x0,y0)', type=float)
 parser.add_argument('--dd', nargs=1, metavar=('dd'), default = ([1e3]), help='sampling along depth', type=float)
@@ -16,18 +17,26 @@ args = parser.parse_args()
 
 
 
-constantdip=True
 dx = args.dd[0]
 
-try:
-   dip = float(args.dip)*pi/180.
-except ValueError:
-   constantdip=False
-   print(args.dip)
-   depthdip=np.loadtxt(args.dip)
+if args.dipType==0:
+   dip = float(args.dipDesc)*pi/180.
+elif args.dipType==1:
+   print(args.dipDesc)
+   depthdip=np.loadtxt(args.dipDesc)
    deptha = depthdip[:,0]
    dipa = depthdip[:,1]*pi/180.
    dipangle = interp1d(deptha, dipa, kind='linear')
+elif args.dipType==2:
+   print(args.dipDesc)
+   curviligndip=np.loadtxt(args.dipDesc)
+   relD = curviligndip[:,0]
+   dipa = curviligndip[:,1]*pi/180.
+   dipangle = interp1d(relD, dipa, kind='linear')
+else:
+   print('dipType not in 0-2')
+   print(args.dipType)
+   exit()
 
 bn = os.path.basename(args.filename)
 ext = bn.split('.')[1]
@@ -63,6 +72,15 @@ vertices = np.zeros((nx,nd,3))
 uz = np.array([0, 0, 1])
 vertices[:,0,:] = nodes
 
+if args.dipType==2:
+   dist = np.linalg.norm(nodes[1:nx]-nodes[0:nx-1], axis=1)
+   distall = np.sum(dist)
+   reldist_seg = dist/distall
+   reldist=np.zeros(nx)
+   for i in range(1,nx):
+      reldist[i]=reldist[i-1]+reldist_seg[i-1]
+   print(reldist)
+
 for i in range(0,nx):
    if not args.constV1:
       if i+1!=nx:
@@ -74,12 +92,14 @@ for i in range(0,nx):
 
    v0[2] = 0
    v0 = v0/np.linalg.norm(v0)
-   v1 = np.array([-v0[1], v0[0], 0])      
+   v1 = np.array([-v0[1], v0[0], 0])
    for j in range(1,nd):
-      if constantdip:
+      if args.dipType==0:
          mydip = dip
-      else:
+      elif args.dipType==1:
          mydip = dipangle(depth[nd-j])
+      else:
+         mydip = dipangle(reldist[i])
       vertices[i,j,:] = vertices[i,j-1,:] + dx * (1./tan(mydip)* v1 -uz)
 
 if args.extend[0]>0:
@@ -102,10 +122,12 @@ if args.extend[0]>0:
       v0 = v0/np.linalg.norm(v0)
       v1 = np.array([-v0[1], v0[0], 0])      
       for j in range(1,nd2):
-         if constantdip:
+         if args.dipType==0:
             mydip = dip
-         else:
+         elif args.dipType==1:
             mydip = dipangle(depth[nd2-j])
+         else:
+            mydip = dipangle(reldist[i])
          vertices2[i,j,:] = vertices2[i,j-1,:] - dx * (1./tan(mydip)* v1 -uz)
 
 bn = os.path.basename(args.filename)
