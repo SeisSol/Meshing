@@ -8,13 +8,26 @@ parser = argparse.ArgumentParser(description='create curved fault geometry from 
 parser.add_argument('filename', help='fault trace (*.pl) or ascii file (2 or 3 columns)')
 parser.add_argument('dipType', type=int, help='0: constant dip, 1: depth dependant dip, described by an ascii file, 2: dip variying along the length of the trace')
 parser.add_argument('dipDesc', help='dipType=0: dip value dipType=1 name of ascii file with 2 columns (depth, dip). dipType=2: idem with (relative length[0-1], dip)')
-parser.add_argument('--constV1',  dest='constV1', action='store_true' , default = False, help='dip horizontal direction from 2 extreme points of pl file (else changing along trace)')
+parser.add_argument('--constV1',  dest='constV1', action='store_true' , default = False, help='dip horizontal direction perpendicular to direction defined by extreme points of curve (else changing along trace)')
+#todo: average strike instead of 2 extreme points?
 parser.add_argument('--translate', nargs=2, metavar=('x0', 'y0'), default = ([0,0]), help='translates all nodes by (x0,y0)', type=float)
 parser.add_argument('--dd', nargs=1, metavar=('dd'), default = ([1e3]), help='sampling along depth', type=float)
 parser.add_argument('--maxdepth', nargs=1, metavar=('maxdepth'), default = ([20e3]), help='max depth (positive) of fault', type=float)
 parser.add_argument('--extend', nargs=1, metavar=('extend'), default = ([00e3]), help='extend toward z= extend (positive)', type=float)
+parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), help='string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered')
 args = parser.parse_args()
 
+if args.proj!='':
+   print("Projecting the nodes coordinates")
+   import pyproj
+   lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
+   if args.proj[0]!='geocent':
+      sProj = args.proj[0]
+      myproj=pyproj.Proj(sProj)
+   else:
+      myproj = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
+else:
+   print("no projection carried out")
 
 
 dx = args.dd[0]
@@ -59,8 +72,15 @@ else:
       b = np.zeros((nx,1))
       nodes = np.append(nodes, b, axis=1)
 
+if args.proj!='':
+   xyz = pyproj.transform(lla, myproj, nodes[:,0], nodes[:,1], 1e3*nodes[:,2], radians=False)
+   nodes[:,0] = xyz[0]
+   nodes[:,1] = xyz[1]
+   nodes[:,2] = xyz[2]
+
 nodes[:,0] = nodes[:,0]+args.translate[0]
 nodes[:,1] = nodes[:,1]+args.translate[1]
+          
 
 print(nodes)
 maxdepth = -args.maxdepth[0]

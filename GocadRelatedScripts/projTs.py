@@ -5,7 +5,7 @@ parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), hel
 args = parser.parse_args()
 
 #set projection
-import mpl_toolkits.basemap.pyproj as pyproj
+import pyproj
 lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
 if args.proj[0]!='geocent':
    sProj = args.proj[0]

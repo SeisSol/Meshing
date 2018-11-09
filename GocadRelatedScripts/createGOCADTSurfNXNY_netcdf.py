@@ -37,7 +37,7 @@ else:
 
 if args.proj!='':
    print("Projecting the nodes coordinates")
-   import mpl_toolkits.basemap.pyproj as pyproj
+   import pyproj
    lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
    if args.proj[0]!='geocent':
       sProj = args.proj[0]
@@ -55,9 +55,9 @@ if args.hole!='':
 
 
 fh = Dataset(args.input_file, mode='r')
-elevation =  fh.variables['elevation'][0::args.subsample[0],0::args.subsample[0]]/1000.
-lat = fh.variables['lat'][0::args.subsample[0]]
-lon = fh.variables['lon'][0::args.subsample[0]]
+elevation =  fh.variables['elevation'][0::args.subsample,0::args.subsample]/1000.
+lat = fh.variables['lat'][0::args.subsample]
+lon = fh.variables['lon'][0::args.subsample]
 
 NX = np.shape(lon)[0]
 NY = np.shape(lat)[0]

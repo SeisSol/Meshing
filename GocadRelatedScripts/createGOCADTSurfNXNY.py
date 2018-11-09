@@ -65,7 +65,7 @@ if args.NX=='':
          if abs(dataxyz[i,ix]-dataxyz[i-1,ix])>1e-16:
             NX = i
             assert (nvertex%NX==0), "nvertex%%NX!=0 nvertex/NX = %f" %(float(nvertex)/NX)
-            NY = nvertex/NX
+            NY = nvertex//NX
             print("NX,NY = %d,%d" %(NX,NY))
             break
    elif len(ids)>1:
@@ -83,14 +83,14 @@ if args.NX=='':
             nx.append(1e20)
          else:
             nx.append(i)
-      NX = min(nx)
+      NX = int(min(nx))
 
       if NX==1e10:
          print("unable to guess NX and NY")
          exit()
 
       assert (nvertex%NX==0), "nvertex%%NX!=0 nvertex/NX = %f" %(float(nvertex)/NX)
-      NY = nvertex/NX
+      NY = int(nvertex/NX)
       print("NX,NY = %d,%d" %(NX,NY))
    else:
       print("unable to guess NX and NY")
@@ -138,7 +138,7 @@ for j in range(NY-1):
 
 if args.proj!='':
    print("Projecting the nodes coordinates")
-   import mpl_toolkits.basemap.pyproj as pyproj
+   import pyproj
    lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
    if args.proj[0]!='geocent':
       sProj = args.proj[0]
