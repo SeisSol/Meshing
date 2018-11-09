@@ -1,11 +1,30 @@
 Place receivers
 ===============
-Given receiver locations on a 2D plane,
-this tool finds the corresponding elevations given a Netcdf mesh.
+Given receiver locations on a 2D plane, this tool finds the corresponding elevations on the free-surface of the given mesh.
 
 Method
 ------
-The tool iterates over partitions in order to keep size of the working set small. Then it iterates over all faces with free surface boundary condition. For each face, the tool checks if a receiver lies inside the projection of the face on the x-y-plane. Then, the receiver's z coordinate is set such that the receiver lies on the face. Afterwards it is lowered by a configurable amount along the z axis. (The direction is determined by the face normal, i.e. "lowered" means in the opposite direction of the normal.)
+The program iterates over all faces with free surface boundary condition. For each face, the tool checks if a receiver lies inside the projection of the face on the x-y-plane. Then, the receiver's z coordinate is set such that the receiver lies on the face. Afterwards it is lowered by a configurable amount along the z axis. (The direction is determined by the face normal, i.e. "lowered" means in the opposite direction of the normal.)
+
+Compilation (on supermuc)
+-----
+
+when using with a hdf5 mesh:  
+```
+module load mpi.intel/2018 hdf5/mpi
+export CPATH=/lrz/sys/libraries/hdf5/1.8.15/impi/include:/lrz/sys/intel/studio2018_p3/impi/2018.2.199/include/
+scons
+```
+
+when using with a (old format) netcdf mesh:
+in SConstruct change 'netcdf_mesh' to True and then  
+
+```
+module load netcdf/mpi
+export PKG_CONFIG_PATH=$NETCDF_BASE/lib/pkgconfig/:$PKG_CONFIG_PATH
+scons
+```
+
 
 Usage
 -----
@@ -20,7 +39,7 @@ place_receivers -d DEPTH -r RECEIVERS -m MESH -o OUTPUT
 7.794138e+05 5.097186e+05
 </pre>
 
-- MESH is the file name of a Netcdf mesh.
+- MESH is the file name of the mesh.
 - OUTPUT is the file name of the output file.
 
 Limitations

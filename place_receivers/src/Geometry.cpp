@@ -3,6 +3,7 @@
  * This file is part of SeisSol.
  *
  * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Thomas Ulrich 
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
@@ -41,7 +42,11 @@
 
 #include <limits>
 
+#ifdef USE_NETCDF
 int const FACE2NODES[4][3] = {{0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}};
+#else
+int const FACE2NODES[4][3] = {{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {0, 3, 2}};
+#endif
 
 struct Support {
   // limits[0][:] = (min x, max x)

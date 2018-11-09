@@ -3,6 +3,7 @@
  * This file is part of SeisSol.
  *
  * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Thomas Ulrich
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
@@ -49,7 +50,7 @@ int main(int argc, char** argv)
   utils::Args args;
   args.addOption("depth", 'd', "Distance of the receivers to the free surface");
   args.addOption("receivers", 'r', "Receiver locations");
-  args.addOption("mesh", 'm', "Netcdf mesh file");
+  args.addOption("mesh", 'm', "mesh file");
   args.addOption("output", 'o', "Receiver output file");
 
 	if (args.parse(argc, argv) != utils::Args::Success) {

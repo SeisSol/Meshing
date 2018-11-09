@@ -47,11 +47,19 @@ env = Environment(
 env['CC'] = os.environ.get('CC', env['CC'])
 env['CXX'] = os.environ.get('CXX', env['CXX'])
 
-# Add netCDF
-libs.find(env, 'netcdf')
+netcdf_mesh=False
+
+if netcdf_mesh:
+   env.Append(CPPDEFINES=['USE_NETCDF'])
+   libs.find(env, 'netcdf', parallel=True)
+else:
+   libs.find(env, 'hdf5', parallel=True)
 
 # Add include path
 env.Append(CPPPATH=['#/src'])
+env.Append(CPPPATH=['#/submodules'])
+
+env.Append(CXXFLAGS=['-std=c++11'])
 
 buildDir = 'build'
 

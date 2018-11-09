@@ -3,6 +3,7 @@
  * This file is part of SeisSol.
  *
  * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Thomas Ulrich 
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
@@ -38,14 +39,17 @@
  **/
 
 #include "Reader.h"
-
+#include "PUML/PUML.h"
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+
+#ifdef USE_NETCDF
 #include <netcdf.h>
+#endif
 
 std::vector<Point> readReceiverFile(std::string const& fileName) {
   std::vector<Point> locations;
@@ -88,6 +92,7 @@ void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
   }
 }
 
+#ifdef USE_NETCDF
 void check_err(const int stat, const int line, const char *file) {
   if (stat != NC_NOERR) {
     fprintf(stderr,"line %d of %s: %s\n", line, file, nc_strerror(stat));
@@ -95,8 +100,54 @@ void check_err(const int stat, const int line, const char *file) {
     exit(-1);
   }
 }
+#endif
 
 Mesh::Mesh(std::string const& fileName){
+
+#ifndef USE_NETCDF
+  PUML::TETPUML puml;
+  puml.open((fileName + ":/connect").c_str(), (fileName + ":/geometry").c_str());
+  puml.addData((fileName + ":/boundary").c_str(), PUML::CELL);
+
+
+  int nElements = puml.numOriginalCells();
+  int nVertex = puml.numOriginalVertices();
+  elementVertices = new int[nElements*4];
+  vertexCoordinates = new double[nVertex*3];
+  elementBoundaries = new int[nElements*4];
+
+  partitions = 1;
+  elementSize = new int[partitions];
+  vertexSize = new int[partitions];
+  elementSize[0] = nElements;
+  vertexSize[0]= nVertex;
+
+
+  double* vertexCoordinate = new double [3]; 
+  for (unsigned int i = 0; i < nVertex; i++) {
+    vertexCoordinate = (double*) puml.originalVertices()[i];
+    for (unsigned int j = 0; j < 3; j++) {
+       vertexCoordinates[3*i+j] =  vertexCoordinate[j];
+    }
+  }
+
+  unsigned long * elementVertice = new unsigned long [4]; 
+  for (unsigned int i = 0; i < nElements; i++) {
+    elementVertice = (unsigned long *) puml.originalCells()[i];
+    for (unsigned int j = 0; j < 4; j++) {
+       elementVertices[4*i+j] =  (int) elementVertice[j];
+    }
+  }
+
+  const int* boundaryCond = puml.cellData(0);
+  for (unsigned int i = 0; i < nElements; i++) {
+    for (unsigned int face = 0; face < 4; face++) {
+       elementBoundaries[4*i + face] = (boundaryCond[i] >> (face*8)) & 0xFF;
+    }
+  }
+  
+#else
+
   int stat;
 	size_t maxVertices;
 	size_t maxElements;
@@ -150,11 +201,18 @@ Mesh::Mesh(std::string const& fileName){
   vertexCoordinates = new double[3*maxVertices];
   elementBoundaries = new int[4*maxElements];
   elementVertices = new int[4*maxElements];
+
+#endif
 }
 
+
+
 Mesh::~Mesh() {
+
+#ifdef USE_NETCDF
   int stat = nc_close(ncid);
   check_err(stat,__LINE__,__FILE__);
+#endif
   
   delete[] elementSize;
   delete[] vertexSize;
@@ -164,6 +222,7 @@ Mesh::~Mesh() {
 }
 
 void Mesh::readPartition(int partition) {
+#ifdef USE_NETCDF
   int stat;
   size_t elementsStart[3] = {partition, 0, 0};
   size_t elementsSize[3] = {1, elementSize[partition], 4};
@@ -180,4 +239,5 @@ void Mesh::readPartition(int partition) {
   
   stat = nc_get_vara_double(ncid, ncVarVrtxCoords, verticesStart, verticesSize, vertexCoordinates);
   check_err(stat,__LINE__,__FILE__);  
+#endif
 }
