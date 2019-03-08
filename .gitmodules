@@ -19,3 +19,6 @@
 [submodule "place_receivers/submodules/PUML"]
 	path = place_receivers/submodules/PUML
 	url = https://github.com/TUM-I5/PUML2.git
+[submodule "submodules/pythonXdmfReader"]
+	path = submodules/pythonXdmfReader
+	url = https://github.com/Thomas-Ulrich/pythonXdmfReader
