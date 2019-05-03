@@ -21,13 +21,12 @@ import os
 parser = argparse.ArgumentParser(description='create surface from a GEBCO netcdf file')
 parser.add_argument('input_file', help='GEBCO netcdf file')
 parser.add_argument('output_file', help='gocad or stl output file')
-parser.add_argument('--subsample', nargs=1, type=int, metavar=('onesample_every'), default = (1), help='use only one value every onesample_every in both direction')
+parser.add_argument('--subsample', nargs=1, type=int, metavar=('onesample_every'), default = [1], help='use only one value every onesample_every in both direction')
 parser.add_argument('--objectname', nargs=1, metavar=('objectname'), default = (''), help='name of the surface in gocad')
 parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl output only)')
 #parser.add_argument('--crop', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='select only surfaces in x0<=x<=x1 and y0<=y<=y1')
 parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), help='string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered')
 args = parser.parse_args()
-
 
 if args.objectname == '':
    base = os.path.basename(args.input_file)
@@ -53,11 +52,20 @@ if args.hole!='':
    y1hole = float(args.hole[3])
    print("hole coordinates %f %f %f %f" %(x0hole,x1hole,y0hole,y1hole))
 
-
 fh = Dataset(args.input_file, mode='r')
-elevation =  fh.variables['elevation'][0::args.subsample,0::args.subsample]/1000.
-lat = fh.variables['lat'][0::args.subsample]
-lon = fh.variables['lon'][0::args.subsample]
+if 'elevation' in fh.variables.keys():
+   altitudevar = 'elevation'
+elif 'Band1' in fh.variables.keys():
+   altitudevar = 'Band1'
+elif 'z' in fh.variables.keys():
+   altitudevar = 'z'
+else:
+   print('could not determine altitude variable')
+   exit()
+
+elevation =  fh.variables[altitudevar][0::args.subsample[0],0::args.subsample[0]]/1000.
+lat = fh.variables['lat'][0::args.subsample[0]]
+lon = fh.variables['lon'][0::args.subsample[0]]
 
 NX = np.shape(lon)[0]
 NY = np.shape(lat)[0]
@@ -92,7 +100,7 @@ if args.hole!='':
       for i in range(0,NX):
          nodes_unproj[k,:]=  [lon[i], lat[j], elevation[j,i]]
          k=k+1
-
+   triangles = triangles.astype(int)
    for k in range(ntriangles):
       xmin = nodes_unproj[triangles[k,0],0]
       xmax = nodes_unproj[triangles[k,2],0]
@@ -103,7 +111,6 @@ if args.hole!='':
       else:
          solid_id[k]=0
 nsolid=int(max(solid_id))
-
 _, ext = os.path.splitext(args.output_file)
 
 
@@ -123,13 +130,13 @@ elif ext=='.stl':
       idtr = np.where(solid_id==sid)[0]
       for k in idtr:
          normal = np.cross(nodes[triangles[k,1],:]-nodes[triangles[k,0],:],nodes[triangles[k,2],:]-nodes[triangles[k,0],:])
-      norm=np.linalg.norm(normal)
-      fout.write('facet normal %e %e %e\n' %tuple(normal/norm))
-      fout.write('outer loop\n')
-      for i in range(0,3):
-         fout.write('vertex %.10e %.10e %.10e\n' % tuple(nodes[triangles[k,i],:]))
-      fout.write("endloop\n")
-      fout.write("endfacet\n")
+         norm=np.linalg.norm(normal)
+         fout.write('facet normal %e %e %e\n' %tuple(normal/norm))
+         fout.write('outer loop\n')
+         for i in range(0,3):
+            fout.write('vertex %.10e %.10e %.10e\n' % tuple(nodes[triangles[k,i],:]))
+         fout.write("endloop\n")
+         fout.write("endfacet\n")
       fout.write("endsolid %s%d\n" %(args.objectname, sid))
 elif ext=='.bstl':
    import struct
