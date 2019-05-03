@@ -112,9 +112,9 @@ if args.crop!='':
    elevation = elevation[indexesYc,:]
 
 #subsampling
-lat = lat[0::args.subsample[0]]
-lon = lon[0::args.subsample[0]]
-elevation =  elevation[0::args.subsample[0],0::args.subsample[0]]
+lat = lat[0::args.subsample]
+lon = lon[0::args.subsample]
+elevation =  elevation[0::args.subsample,0::args.subsample]
 print(elevation)
 
 NY,NX = elevation.shape

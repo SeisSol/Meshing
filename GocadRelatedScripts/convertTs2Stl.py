@@ -7,6 +7,8 @@ parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), hel
 parser.add_argument('--debug', dest='debug', action='store_true', help='print additionnal debug info')
 parser.add_argument('--merged', dest='merged', action='store_true', help='if true, each surface is not isolated in a stl solid')
 parser.add_argument('--bstl', dest='bstl', action='store_true', help='if true, write binary stl instead of stl (note that surface will be merged once imported by SimModeler)')
+parser.add_argument('--tokm', dest='tokm', action='store_true', help='convert coordinates to km')
+parser.add_argument('--translate', nargs=2, metavar=('x0', 'y0'), default = ([0,0]), help='translates all nodes by (x0,y0)', type=float)
 args = parser.parse_args()
 
 
@@ -113,7 +115,10 @@ with open(args.ts_file) as fid:
             nodes[:,0]= xyzb[0]
             nodes[:,1]= xyzb[1]
             nodes[:,2]= xyzb[2]
-
+         nodes[:,0] = nodes[:,0]+args.translate[0]
+         nodes[:,1] = nodes[:,1]+args.translate[1]
+         if args.tokm:
+            nodes[:,:]= nodes[:,:]/1e3
 
          #compute efficiently the normals
          logging.debug("computing the normals")
