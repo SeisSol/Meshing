@@ -24,7 +24,7 @@ parser.add_argument('output_file', help='gocad or stl output file')
 parser.add_argument('--subsample', nargs=1, type=int, metavar=('onesample_every'), default = [1], help='use only one value every onesample_every in both direction')
 parser.add_argument('--objectname', nargs=1, metavar=('objectname'), default = (''), help='name of the surface in gocad')
 parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl output only)')
-#parser.add_argument('--crop', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='select only surfaces in x0<=x<=x1 and y0<=y<=y1')
+parser.add_argument('--crop', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='select only surfaces in x0<=x<=x1 and y0<=y<=y1')
 parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), help='string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered')
 args = parser.parse_args()
 
@@ -52,6 +52,14 @@ if args.hole!='':
    y1hole = float(args.hole[3])
    print("hole coordinates %f %f %f %f" %(x0hole,x1hole,y0hole,y1hole))
 
+if args.crop!='':
+   print("crop the geometry")
+   x0crop = float(args.crop[0])
+   x1crop = float(args.crop[1])
+   y0crop = float(args.crop[2])
+   y1crop = float(args.crop[3])
+   print("only consider %e < lon < %e, %e < lat < %e" %(x0crop, x1crop, y0crop, y1crop))
+
 fh = Dataset(args.input_file, mode='r')
 if 'elevation' in fh.variables.keys():
    altitudevar = 'elevation'
@@ -63,12 +71,22 @@ else:
    print('could not determine altitude variable')
    exit()
 
-elevation =  fh.variables[altitudevar][0::args.subsample[0],0::args.subsample[0]]/1000.
 lat = fh.variables['lat'][0::args.subsample[0]]
 lon = fh.variables['lon'][0::args.subsample[0]]
+elevation =  fh.variables[altitudevar][0::args.subsample[0],0::args.subsample[0]]/1000.
+
+if args.crop!='':
+   lon_indices = np.logical_and(lon > x0crop, lon < x1crop)
+   lat_indices = np.logical_and(lat > y0crop, lat < y1crop)
+   lon = lon[lon_indices]
+   lat = lat[lat_indices]
+   elev_indices = np.outer(lat_indices, lon_indices)
+   elevation = elevation[elev_indices]
+
 
 NX = np.shape(lon)[0]
 NY = np.shape(lat)[0]
+elevation = np.reshape(elevation, (NY, NX))
 
 nnodes = NX*NY
 ntriangles=2*(NX-1)*(NY-1)
