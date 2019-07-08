@@ -61,6 +61,24 @@ if args.crop!='':
    print("only consider %e < lon < %e, %e < lat < %e" %(x0crop, x1crop, y0crop, y1crop))
 
 fh = Dataset(args.input_file, mode='r')
+
+if 'lon' in fh.variables.keys():
+   xvar = 'lon'
+elif 'x' in fh.variables.keys():
+   xvar = 'x'
+else:
+   print('could not determine x variable')
+   exit()
+
+if 'lat' in fh.variables.keys():
+   yvar = 'lat'
+elif 'y' in fh.variables.keys():
+   yvar = 'y'
+else:
+   print('could not determine y variable')
+   exit()
+
+
 if 'elevation' in fh.variables.keys():
    altitudevar = 'elevation'
 elif 'Band1' in fh.variables.keys():
@@ -71,8 +89,10 @@ else:
    print('could not determine altitude variable')
    exit()
 
-lat = fh.variables['lat'][0::args.subsample[0]]
-lon = fh.variables['lon'][0::args.subsample[0]]
+
+
+lat = fh.variables[yvar][0::args.subsample[0]]
+lon = fh.variables[xvar][0::args.subsample[0]]
 elevation =  fh.variables[altitudevar][0::args.subsample[0],0::args.subsample[0]]/1000.
 
 if args.crop!='':
