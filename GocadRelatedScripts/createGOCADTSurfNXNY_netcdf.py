@@ -113,6 +113,7 @@ if args.hole!='':
 nsolid=int(max(solid_id))
 _, ext = os.path.splitext(args.output_file)
 
+triangles = triangles.astype(int)
 
 if ext=='.ts':
    fout = open(args.output_file,'w')
