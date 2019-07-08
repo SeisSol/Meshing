@@ -91,6 +91,8 @@ for j in range(NY-1):
       triangles[k+1,:] = [i+j*NX,i+(j+1)*NX,i+1+(j+1)*NX]
       k=k+2
 
+triangles = triangles.astype(int)
+
 solid_id = np.zeros(ntriangles)
 if args.hole!='':
    #we first need the unprojected nodes coordinates
@@ -100,7 +102,6 @@ if args.hole!='':
       for i in range(0,NX):
          nodes_unproj[k,:]=  [lon[i], lat[j], elevation[j,i]]
          k=k+1
-   triangles = triangles.astype(int)
    for k in range(ntriangles):
       xmin = nodes_unproj[triangles[k,0],0]
       xmax = nodes_unproj[triangles[k,2],0]
@@ -112,7 +113,6 @@ if args.hole!='':
          solid_id[k]=0
 nsolid=int(max(solid_id))
 _, ext = os.path.splitext(args.output_file)
-
 
 if ext=='.ts':
    fout = open(args.output_file,'w')
