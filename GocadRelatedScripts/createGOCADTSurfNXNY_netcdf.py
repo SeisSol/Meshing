@@ -114,11 +114,6 @@ if args.hole!='':
 nsolid=int(max(solid_id))
 _, ext = os.path.splitext(args.output_file)
 
-<<<<<<< HEAD
-=======
-triangles = triangles.astype(int)
-
->>>>>>> d5186d4f351b2e5c3470e8580d3940a2492286c6
 if ext=='.ts':
    fout = open(args.output_file,'w')
    fout.write("GOCAD TSURF 1\nHEADER {\nname:"+args.objectname+"\n}\nTRIANGLES\n")
