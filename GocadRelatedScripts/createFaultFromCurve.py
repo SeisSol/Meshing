@@ -125,7 +125,7 @@ for i in range(1,nNewNodes):
    xi[i]=xi[i-1]+distBetweenNodes[i-1]
 
 
-depth = -np.flip(np.arange(0, args.maxdepth[0],dx))
+depth = -np.flip(np.arange(0, args.maxdepth[0],dx), axis=0)
 
 nx = np.shape(nodes)[0]
 nd = np.shape(depth)[0]
@@ -180,7 +180,7 @@ for i in range(0,nx):
 # Create new vertex above 0
 if args.extend[0]>0:
    #Extension toward z plus
-   depth = np.flip(np.arange(0,args.extend[0],dx))
+   depth = np.flip(np.arange(0,args.extend[0],dx), axis=0)
    #depth = np.arange(0,args.extend[0],dx)
    nd2 = np.shape(depth)[0]
    vertices2 = np.zeros((nx,nd2,3))
@@ -201,7 +201,7 @@ if args.extend[0]>0:
 
 if args.extend[0]>0:
    #Extension toward z plus
-   depth = np.flip(np.arange(0,args.extend[0],dx))
+   depth = np.flip(np.arange(0,args.extend[0],dx), axis=0)
    depth = np.concatenate((depth, -np.arange(dx, args.maxdepth[0],dx)))
 else:
    depth = -np.arange(dx, args.maxdepth[0],dx)
