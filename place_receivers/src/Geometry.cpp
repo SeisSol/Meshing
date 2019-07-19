@@ -82,12 +82,13 @@ struct Action {
       normals[side][0] = v1[1]-v0[1];
       normals[side][1] = -v1[0]+v0[0];
 
+      dist[side] = normals[side][0] * v0[0] + normals[side][1] * v0[1];
       
       if (normals[side][0] * vtest[0] + normals[side][1] * vtest[1] > dist[side]) {
         normals[side][0] *= -1.;
         normals[side][1] *= -1.;
+        dist[side] *= -1;
       }
-      dist[side] = normals[side][0] * v0[0] + normals[side][1] * v0[1];
     }
     
     double a[3];
