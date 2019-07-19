@@ -82,12 +82,12 @@ struct Action {
       normals[side][0] = v1[1]-v0[1];
       normals[side][1] = -v1[0]+v0[0];
 
-      dist[side] = normals[side][0] * v0[0] + normals[side][1] * v0[1];
       
       if (normals[side][0] * vtest[0] + normals[side][1] * vtest[1] > dist[side]) {
         normals[side][0] *= -1.;
         normals[side][1] *= -1.;
       }
+      dist[side] = normals[side][0] * v0[0] + normals[side][1] * v0[1];
     }
     
     double a[3];
@@ -107,7 +107,6 @@ struct Action {
     for (unsigned side = 0; side < 3; ++side) {
       inside = inside && (normals[side][0] * receiver.x + normals[side][1] * receiver.y <= dist[side]);
     }
-    
     if (inside) {
       receiver.z = (faceDist - faceNormal[0] * receiver.x - faceNormal[1] * receiver.y) / faceNormal[2];
       if (faceNormal[2] >= 0) {
@@ -124,7 +123,7 @@ void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree) {
     for (unsigned face = 0; face < 4; ++face) {
       // Consider only free surface boundaries
       if (mesh.elementBoundaries[4*element + face] == 1) {
-        Action act;
+	Action act;
         act.depth = depth;
         Support sup;
         for (unsigned node = 0; node < 3; ++node) {
@@ -137,7 +136,7 @@ void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree) {
           sup.limits[1][0] = std::min(sup.limits[1][0], act.vertices[node].coords[1]);
           sup.limits[1][1] = std::max(sup.limits[1][1], act.vertices[node].coords[1]);
         }
-        act.determineNormals();
+	act.determineNormals();
         tree.search(sup, act);
       }
     }
