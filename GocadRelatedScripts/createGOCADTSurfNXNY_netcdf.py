@@ -23,7 +23,7 @@ parser.add_argument('input_file', help='GEBCO netcdf file')
 parser.add_argument('output_file', help='gocad or stl output file')
 parser.add_argument('--subsample', nargs=1, type=int, metavar=('onesample_every'), default = [1], help='use only one value every onesample_every in both direction')
 parser.add_argument('--objectname', nargs=1, metavar=('objectname'), default = (''), help='name of the surface in gocad')
-parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl output only)')
+parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)')
 parser.add_argument('--crop', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='select only surfaces in x0<=x<=x1 and y0<=y<=y1')
 parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), help='string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered')
 args = parser.parse_args()
@@ -131,9 +131,8 @@ triangles = triangles.astype(int)
 
 solid_id = np.zeros(ntriangles)
 if args.hole!='':
+   print('tagging hole...')
    for k in range(ntriangles):
-      if k%25000==0:
-         print('tagging hole: done %d/%d' %(k, ntriangles))
       xmin = nodes[triangles[k,0],0]
       xmax = nodes[triangles[k,2],0]
       ymin = nodes[triangles[k,0],1]
@@ -142,6 +141,7 @@ if args.hole!='':
          solid_id[k]=1
       else:
          solid_id[k]=0
+   print('done tagging hole')
 nsolid=int(max(solid_id))
 
 
@@ -160,13 +160,20 @@ _, ext = os.path.splitext(args.output_file)
 
 if ext=='.ts':
    fout = open(args.output_file,'w')
-   fout.write("GOCAD TSURF 1\nHEADER {\nname:"+args.objectname+"\n}\nTRIANGLES\n")
-   for k in range(1,nnodes+1):
-      fout.write("VRTX %d %f %f %f\n" %(k, nodes[k,0], nodes[k,1], nodes[k,2]))
-
-   for k in range(ntriangles):
-      fout.write("TRGL %d %d %d\n" %(triangles[k,0],triangles[k,1],triangles[k,2]))
-   fout.write("END")
+   for sid in range(nsolid+1):
+      fout.write("GOCAD TSURF 1\nHEADER {\nname:"+args.objectname+str(sid)+"\n}\nTRIANGLES\n")
+      if args.hole=='':
+         #if no hole tagged, we can skip the where and unique routine of below 
+         idtr = range(ntriangles)
+         Vid = range(1,nnodes+1)
+      else:
+         idtr = np.where(solid_id==sid)[0]
+         Vid = np.unique(triangles[idtr,:].flatten())
+      for k in Vid:
+         fout.write("VRTX %d %f %f %f\n" %(k, nodes[k,0], nodes[k,1], nodes[k,2]))
+      for k in idtr:
+         fout.write("TRGL %d %d %d\n" %(triangles[k,0],triangles[k,1],triangles[k,2]))
+      fout.write("END\n")
 elif ext=='.stl':
    fout = open(args.output_file,'w')
    for sid in range(nsolid+1):
