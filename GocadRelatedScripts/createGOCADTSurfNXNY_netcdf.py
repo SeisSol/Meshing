@@ -114,14 +114,12 @@ ntriangles=2*(NX-1)*(NY-1)
 nodes=np.zeros((nnodes+1,3))
 triangles=np.zeros((ntriangles,3))
 
-k=1
-for j in range(0,NY):
-    for i in range(0,NX):
-       if args.proj!='':
-          nodes[k,:] = pyproj.transform(lla, myproj, lon[i], lat[j], 1e3*elevation[j,i], radians=False)
-       else:
-          nodes[k,:]=  [lon[i], lat[j], elevation[j,i]]
-       k=k+1
+xv, yv = np.meshgrid(lon, lat)
+nodes[1:,0]=xv.flatten()
+nodes[1:,1]=yv.flatten()
+nodes[1:,2]=elevation.flatten()
+del xv, yv, elevation
+
 k=0
 for j in range(NY-1):
    for i in range(1,NX):
@@ -133,23 +131,31 @@ triangles = triangles.astype(int)
 
 solid_id = np.zeros(ntriangles)
 if args.hole!='':
-   #we first need the unprojected nodes coordinates
-   nodes_unproj=np.zeros((nnodes+1,3))
-   k=1
-   for j in range(0,NY):
-      for i in range(0,NX):
-         nodes_unproj[k,:]=  [lon[i], lat[j], elevation[j,i]]
-         k=k+1
    for k in range(ntriangles):
-      xmin = nodes_unproj[triangles[k,0],0]
-      xmax = nodes_unproj[triangles[k,2],0]
-      ymin = nodes_unproj[triangles[k,0],1]
-      ymax = nodes_unproj[triangles[k,2],1]
+      if k%25000==0:
+         print('tagging hole: done %d/%d' %(k, ntriangles))
+      xmin = nodes[triangles[k,0],0]
+      xmax = nodes[triangles[k,2],0]
+      ymin = nodes[triangles[k,0],1]
+      ymax = nodes[triangles[k,2],1]
       if  ((xmin>x0hole) & (xmax<x1hole))&((ymin>y0hole) & (ymax<y1hole)):
          solid_id[k]=1
       else:
          solid_id[k]=0
 nsolid=int(max(solid_id))
+
+
+
+if args.proj!='':
+   print('projecting the node coordinates')
+   x0,y0,z0 = pyproj.transform(lla, myproj, nodes[:,0], nodes[:,1], 1e3*nodes[:,2], radians=False)
+   nodes[:,0]=x0
+   nodes[:,1]=y0
+   nodes[:,2]=z0
+   print(nodes)
+   print('done projecting')
+   del x0,y0,z0
+
 _, ext = os.path.splitext(args.output_file)
 
 if ext=='.ts':
