@@ -111,18 +111,18 @@ elevation = np.reshape(elevation, (NY, NX))
 nnodes = NX*NY
 ntriangles=2*(NX-1)*(NY-1)
 
-nodes=np.zeros((nnodes+1,3))
+nodes=np.zeros((nnodes,3))
 triangles=np.zeros((ntriangles,3))
 
 xv, yv = np.meshgrid(lon, lat)
-nodes[1:,0]=xv.flatten()
-nodes[1:,1]=yv.flatten()
-nodes[1:,2]=elevation.flatten()
+nodes[:,0]=xv.flatten()
+nodes[:,1]=yv.flatten()
+nodes[:,2]=elevation.flatten()
 del xv, yv, elevation
 
 k=0
 for j in range(NY-1):
-   for i in range(1,NX):
+   for i in range(NX-1):
       triangles[k,:] = [i+j*NX,i+1+j*NX,i+1+(j+1)*NX]
       triangles[k+1,:] = [i+j*NX,i+(j+1)*NX,i+1+(j+1)*NX]
       k=k+2
