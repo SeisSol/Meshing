@@ -175,14 +175,18 @@ if ext=='.ts':
          fout.write("TRGL %d %d %d\n" %(triangles[k,0],triangles[k,1],triangles[k,2]))
       fout.write("END\n")
 elif ext=='.stl':
+   #compute efficiently the normals
+   print('computing the normals...')
+   normal = np.cross(nodes[triangles[:,1],:]-nodes[triangles[:,0],:],nodes[triangles[:,2],:]-nodes[triangles[:,0],:])
+   norm=np.apply_along_axis(np.linalg.norm, 1, normal)
+   normal = normal/norm.reshape((ntriangles,1))  
+   print('done computing the normals')
    fout = open(args.output_file,'w')
    for sid in range(nsolid+1):
       fout.write("solid %s%d\n" %(args.objectname, sid))
       idtr = np.where(solid_id==sid)[0]
       for k in idtr:
-         normal = np.cross(nodes[triangles[k,1],:]-nodes[triangles[k,0],:],nodes[triangles[k,2],:]-nodes[triangles[k,0],:])
-         norm=np.linalg.norm(normal)
-         fout.write('facet normal %e %e %e\n' %tuple(normal/norm))
+         fout.write('facet normal %e %e %e\n' %tuple(normal[k,:]))
          fout.write('outer loop\n')
          for i in range(0,3):
             fout.write('vertex %.10e %.10e %.10e\n' % tuple(nodes[triangles[k,i],:]))
