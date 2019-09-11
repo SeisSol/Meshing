@@ -23,7 +23,7 @@ parser.add_argument('input_file', help='GEBCO netcdf file')
 parser.add_argument('output_file', help='gocad or stl output file')
 parser.add_argument('--subsample', nargs=1, type=int, metavar=('onesample_every'), default = [1], help='use only one value every onesample_every in both direction')
 parser.add_argument('--objectname', nargs=1, metavar=('objectname'), default = (''), help='name of the surface in gocad')
-parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl output only)')
+parser.add_argument('--hole', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)')
 parser.add_argument('--crop', nargs=4, metavar=(('x0'),('x1'),('y0'),('y1')), default = (''), help='select only surfaces in x0<=x<=x1 and y0<=y<=y1')
 parser.add_argument('--proj', nargs=1, metavar=('projname'), default = (''), help='string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered')
 args = parser.parse_args()
@@ -111,20 +111,18 @@ elevation = np.reshape(elevation, (NY, NX))
 nnodes = NX*NY
 ntriangles=2*(NX-1)*(NY-1)
 
-nodes=np.zeros((nnodes+1,3))
+nodes=np.zeros((nnodes,3))
 triangles=np.zeros((ntriangles,3))
 
-k=1
-for j in range(0,NY):
-    for i in range(0,NX):
-       if args.proj!='':
-          nodes[k,:] = pyproj.transform(lla, myproj, lon[i], lat[j], 1e3*elevation[j,i], radians=False)
-       else:
-          nodes[k,:]=  [lon[i], lat[j], elevation[j,i]]
-       k=k+1
+xv, yv = np.meshgrid(lon, lat)
+nodes[:,0]=xv.flatten()
+nodes[:,1]=yv.flatten()
+nodes[:,2]=elevation.flatten()
+del xv, yv, elevation
+
 k=0
 for j in range(NY-1):
-   for i in range(1,NX):
+   for i in range(NX-1):
       triangles[k,:] = [i+j*NX,i+1+j*NX,i+1+(j+1)*NX]
       triangles[k+1,:] = [i+j*NX,i+(j+1)*NX,i+1+(j+1)*NX]
       k=k+2
@@ -133,43 +131,62 @@ triangles = triangles.astype(int)
 
 solid_id = np.zeros(ntriangles)
 if args.hole!='':
-   #we first need the unprojected nodes coordinates
-   nodes_unproj=np.zeros((nnodes+1,3))
-   k=1
-   for j in range(0,NY):
-      for i in range(0,NX):
-         nodes_unproj[k,:]=  [lon[i], lat[j], elevation[j,i]]
-         k=k+1
+   print('tagging hole...')
    for k in range(ntriangles):
-      xmin = nodes_unproj[triangles[k,0],0]
-      xmax = nodes_unproj[triangles[k,2],0]
-      ymin = nodes_unproj[triangles[k,0],1]
-      ymax = nodes_unproj[triangles[k,2],1]
+      xmin = nodes[triangles[k,0],0]
+      xmax = nodes[triangles[k,2],0]
+      ymin = nodes[triangles[k,0],1]
+      ymax = nodes[triangles[k,2],1]
       if  ((xmin>x0hole) & (xmax<x1hole))&((ymin>y0hole) & (ymax<y1hole)):
          solid_id[k]=1
       else:
          solid_id[k]=0
+   print('done tagging hole')
 nsolid=int(max(solid_id))
+
+
+
+if args.proj!='':
+   print('projecting the node coordinates')
+   x0,y0,z0 = pyproj.transform(lla, myproj, nodes[:,0], nodes[:,1], 1e3*nodes[:,2], radians=False)
+   nodes[:,0]=x0
+   nodes[:,1]=y0
+   nodes[:,2]=z0
+   print(nodes)
+   print('done projecting')
+   del x0,y0,z0
+
 _, ext = os.path.splitext(args.output_file)
 
 if ext=='.ts':
    fout = open(args.output_file,'w')
-   fout.write("GOCAD TSURF 1\nHEADER {\nname:"+args.objectname+"\n}\nTRIANGLES\n")
-   for k in range(1,nnodes+1):
-      fout.write("VRTX %d %f %f %f\n" %(k, nodes[k,0], nodes[k,1], nodes[k,2]))
-
-   for k in range(ntriangles):
-      fout.write("TRGL %d %d %d\n" %(triangles[k,0],triangles[k,1],triangles[k,2]))
-   fout.write("END")
+   for sid in range(nsolid+1):
+      fout.write("GOCAD TSURF 1\nHEADER {\nname:"+args.objectname+str(sid)+"\n}\nTRIANGLES\n")
+      if args.hole=='':
+         #if no hole tagged, we can skip the where and unique routine of below 
+         idtr = range(ntriangles)
+         Vid = range(1,nnodes+1)
+      else:
+         idtr = np.where(solid_id==sid)[0]
+         Vid = np.unique(triangles[idtr,:].flatten())
+      for k in Vid:
+         fout.write("VRTX %d %f %f %f\n" %(k, nodes[k,0], nodes[k,1], nodes[k,2]))
+      for k in idtr:
+         fout.write("TRGL %d %d %d\n" %(triangles[k,0],triangles[k,1],triangles[k,2]))
+      fout.write("END\n")
 elif ext=='.stl':
+   #compute efficiently the normals
+   print('computing the normals...')
+   normal = np.cross(nodes[triangles[:,1],:]-nodes[triangles[:,0],:],nodes[triangles[:,2],:]-nodes[triangles[:,0],:])
+   norm=np.apply_along_axis(np.linalg.norm, 1, normal)
+   normal = normal/norm.reshape((ntriangles,1))  
+   print('done computing the normals')
    fout = open(args.output_file,'w')
    for sid in range(nsolid+1):
       fout.write("solid %s%d\n" %(args.objectname, sid))
       idtr = np.where(solid_id==sid)[0]
       for k in idtr:
-         normal = np.cross(nodes[triangles[k,1],:]-nodes[triangles[k,0],:],nodes[triangles[k,2],:]-nodes[triangles[k,0],:])
-         norm=np.linalg.norm(normal)
-         fout.write('facet normal %e %e %e\n' %tuple(normal/norm))
+         fout.write('facet normal %e %e %e\n' %tuple(normal[k,:]))
          fout.write('outer loop\n')
          for i in range(0,3):
             fout.write('vertex %.10e %.10e %.10e\n' % tuple(nodes[triangles[k,i],:]))
