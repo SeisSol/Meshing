@@ -58,9 +58,11 @@ std::vector<Point> readReceiverFile(std::string const& fileName) {
 
   while (std::getline(in, line)) {
     std::istringstream iss(line);
-    Point p;
-    iss >> p.x >> p.y;
-    p.z = NAN;
+    Point p{NAN, NAN, NAN};
+    int coord = 0;
+    while (coord < 3 && iss.good()) {
+      iss >> p.coords[coord++];
+    }
     locations.push_back(p);
     if (iss.bad()) {
       std::cerr << "An error occurred while reading the receiver file." << std::endl;
@@ -73,16 +75,19 @@ std::vector<Point> readReceiverFile(std::string const& fileName) {
 
 void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
   std::ofstream out(fileName.c_str());
-  out << std::scientific << std::setprecision(10);
+  out << std::scientific << std::setprecision(16);
   
   int failureCounter = 0;
   Point const* points = tree.points();
+  std::vector<Point> sortedPoints(tree.numPoints());
   for (unsigned p = 0; p < tree.numPoints(); ++p) {
-    Point const* point = &points[tree.index(p)];
-    if (!std::isnan(point->z)) {
-      out << point->x << " " << point->y << " " << point->z << std::endl;
+    sortedPoints[tree.index(p)] = points[p];
+  }
+  for (auto const& point : sortedPoints) {
+    if (!std::isnan(point.z)) {
+      out << point.x << " " << point.y << " " << point.z << std::endl;
     } else {
-      std::cerr << "Warning: Did not find elevation for receiver at (" << point->x << ", " << point->y << ")." << std::endl;
+      std::cerr << "Warning: Did not find elevation for receiver at (" << point.x << ", " << point.y << ")." << std::endl;
       ++failureCounter;
     }
   }

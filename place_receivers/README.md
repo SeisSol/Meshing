@@ -39,6 +39,13 @@ place_receivers -d DEPTH -r RECEIVERS -m MESH -o OUTPUT
 7.794138e+05 5.097186e+05
 </pre>
 
+One may specify the depth per receiver with an optional third column, where the depth is the maximum of DEPTH and the third column. For example with DEPTH=0.1:
+
+<pre>
+8.251411e+05 5.900044e+05 0.0   # -> depth 0.1
+7.654161e+05 3.274531e+05 100.0 # -> depth 100
+</pre>
+
 - MESH is the file name of the mesh.
 - OUTPUT is the file name of the output file.
 

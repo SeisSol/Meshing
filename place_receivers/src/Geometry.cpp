@@ -41,6 +41,7 @@
 #include "Geometry.h"
 
 #include <limits>
+#include <cmath>
 
 #ifdef USE_NETCDF
 int const FACE2NODES[4][3] = {{0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}};
@@ -109,11 +110,15 @@ struct Action {
     }
     
     if (inside) {
+      double local_depth = 0.0;
+      if (!std::isnan(receiver.z)) {
+        local_depth = std::max(depth, std::fabs(receiver.z));
+      }
       receiver.z = (faceDist - faceNormal[0] * receiver.x - faceNormal[1] * receiver.y) / faceNormal[2];
       if (faceNormal[2] >= 0) {
-        receiver.z -= depth;
+        receiver.z -= local_depth;
       } else {
-        receiver.z += depth;
+        receiver.z += local_depth;
       }
     }
   }
