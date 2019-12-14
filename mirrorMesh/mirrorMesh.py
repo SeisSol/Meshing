@@ -47,7 +47,7 @@ def write_xdmfh5(fn, xyzb, tetrab, groupb, boundaryb):
    print ("done writing %s.xdmf" %fn)
 
 
-parser = argparse.ArgumentParser(description='Read hdf5 mesh and miror it')
+parser = argparse.ArgumentParser(description='Read hdf5 mesh and mirror it')
 parser.add_argument('filename', help='filename of xdmf SeisSol mesh')
 parser.add_argument('normal', nargs=1, help='0:x 1:y 2:z', type=int)
 parser.add_argument('xc', nargs=1, help='coordinate on plane', type=float)
