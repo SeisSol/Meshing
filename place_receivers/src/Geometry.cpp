@@ -124,7 +124,7 @@ void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree) {
     for (unsigned face = 0; face < 4; ++face) {
       // Consider only free surface boundaries
       if (mesh.elementBoundaries[4*element + face] == 1) {
-	Action act;
+        Action act;
         act.depth = depth;
         Support sup;
         for (unsigned node = 0; node < 3; ++node) {
@@ -137,7 +137,7 @@ void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree) {
           sup.limits[1][0] = std::min(sup.limits[1][0], act.vertices[node].coords[1]);
           sup.limits[1][1] = std::max(sup.limits[1][1], act.vertices[node].coords[1]);
         }
-	act.determineNormals();
+        act.determineNormals();
         tree.search(sup, act);
       }
     }
