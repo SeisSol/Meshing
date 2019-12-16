@@ -87,6 +87,7 @@ struct Action {
       if (normals[side][0] * vtest[0] + normals[side][1] * vtest[1] > dist[side]) {
         normals[side][0] *= -1.;
         normals[side][1] *= -1.;
+        dist[side] *= -1;
       }
     }
     
@@ -107,7 +108,6 @@ struct Action {
     for (unsigned side = 0; side < 3; ++side) {
       inside = inside && (normals[side][0] * receiver.x + normals[side][1] * receiver.y <= dist[side]);
     }
-    
     if (inside) {
       receiver.z = (faceDist - faceNormal[0] * receiver.x - faceNormal[1] * receiver.y) / faceNormal[2];
       if (faceNormal[2] >= 0) {
