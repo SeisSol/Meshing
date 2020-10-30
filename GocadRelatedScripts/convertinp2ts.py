@@ -44,7 +44,7 @@ parser = argparse.ArgumentParser(description="convert inp (from SimModeler5 2d m
 parser.add_argument("inp_filename", help="inp filename (SimModeler5 2d mesh (ABAQUS 2D))")
 parser.add_argument("ts_filename", nargs="?", help="output filname (if not used = inpbasename.ts)", default="")
 parser.add_argument("--isolate", dest="isolate", action="store_true", help="isolate every surface in a different ts file")
-parser.add_argument("--tag_intersect", dest="tag_intersect", action="store_true", help="write the intersection in the ts file")
+parser.add_argument("--tag_intersect", dest="tag_intersect", action="store_true", help="write the intersection in the ts file as control nodes")
 args = parser.parse_args()
 
 if args.ts_filename == "":
