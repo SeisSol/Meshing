@@ -16,6 +16,8 @@ parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0
 parser.add_argument("--dd", nargs=1, metavar=("dd"), default=([1e3]), help="sampling along depth (m)", type=float)
 parser.add_argument("--maxdepth", nargs=1, metavar=("maxdepth"), default=([20e3]), help="max depth (positive) of fault (m)", type=float)
 parser.add_argument("--extend", nargs=1, metavar=("extend"), default=([00e3]), help="extend toward z= extend (positive)", type=float)
+parser.add_argument("--first_node_ext", nargs=1, default=([0.0]), help="extend along strike trace before the first node (arg: length in km)", type=float)
+parser.add_argument("--last_node_ext", nargs=1, default=([0.0]), help="extend along strike trace after the last node (arg: length in km)", type=float)
 parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
 parser.add_argument("--smoothingParameter", nargs=1, metavar=("smoothingParameter"), default=([1e5]), help="smoothing parameter (the bigger the smoother)", type=float)
 parser.add_argument("--plotFaultTrace", dest="plotFaultTrace", action="store_true", default=False, help="plot resampled fault trace in matplotlib")
@@ -88,6 +90,17 @@ else:
 
 if args.proj != "":
     nodes = Project(nodes)
+
+if args.first_node_ext[0] > 0:
+    u0 = nodes[0, :] - nodes[1, :]
+    u0 = u0 / np.linalg.norm(u0)
+    nodes = np.vstack([nodes[0, :] + u0 * args.first_node_ext[0], nodes])
+
+if args.last_node_ext[0] > 0:
+    u0 = nodes[-1, :] - nodes[-2, :]
+    u0 = u0 / np.linalg.norm(u0)
+    nodes = np.vstack([nodes, nodes[-1, :] + u0 * args.last_node_ext[0]])
+
 
 nodes[:, 0] = nodes[:, 0] + args.translate[0]
 nodes[:, 1] = nodes[:, 1] + args.translate[1]
