@@ -18,14 +18,140 @@ import sys
 # parsing python arguments
 import argparse
 import os
+from collections import defaultdict
+
+
+class Grid:
+    def __init__(self, fname, downsample):
+
+        basename, ext = os.path.splitext(fname)
+        if ext == ".nc":
+            self.read_netcdf(fname, downsample)
+        elif ext == ".esri":
+            print("Warning might not work (not tested)")
+            self.read_ascii_esri(fname, downsample)
+        else:
+            raise ValueError("format not supported", ext)
+        self.compute_nx_ny()
+
+    def read_ascii_esri(self, fname, downsample):
+        with open(fname) as fh:
+            # Read header
+            NX = int(fh.readline().split()[1])
+            NY = int(fh.readline().split()[1])
+            xbotleft = float(fh.readline().split()[1])
+            ybotleft = float(fh.readline().split()[1])
+            dx = float(fh.readline().split()[1])
+            fh.readline()
+            # compute x and y
+            self.x = np.arange(xbotleft, xbotleft + NX * dx, dx)
+            self.y = np.flip(np.arange(ybotleft, ybotleft + NY * dx, dx))
+            print(self.x, self.y)
+            print("reading elevation")
+            # using pandas rather than loadtxt because much faster
+            import pandas as pd
+
+            self.z = pd.read_csv(fh, delimiter=" ", dtype=np.float64, header=None).values[:, :-1]
+            self.x = self.x[0::downsample]
+            self.y = self.y[0::downsample]
+            self.z = self.z[0::downsample, 0::downsample]
+            print("done reading")
+
+    def read_netcdf(self, fname, downsample):
+        fh = Dataset(fname, mode="r")
+        self.keys = fh.variables.keys()
+        xvar = self.determine_netcdf_variables(["lon", "x"])
+        yvar = self.determine_netcdf_variables(["lat", "y"])
+        zvar = self.determine_netcdf_variables(["elevation", "z", "Band1"])
+        self.x = fh.variables[xvar][0::downsample]
+        self.y = fh.variables[yvar][0::downsample]
+        self.z = fh.variables[zvar][0::downsample, 0::downsample]
+        self.compute_nx_ny()
+
+    def compute_nx_ny(self):
+        self.nx = self.x.shape[0]
+        self.ny = self.y.shape[0]
+        print(self.nx, self.ny)
+
+    def determine_netcdf_variables(self, l_possible_names):
+        for name in l_possible_names:
+            if name in self.keys:
+                return name
+        raise ("could not determine netcdf variable")
+
+    def crop(self, argCrop):
+        if argCrop != None:
+            x0, x1, y0, y1 = argCrop
+            print("crop the grid")
+            print("only consider %e < lon < %e, %e < lat < %e" % (x0, x1, y0, y1))
+            lon_indices = np.logical_and(self.x > x0, self.x < x1)
+            lat_indices = np.logical_and(self.y > y0, self.y < y1)
+            self.x = self.x[lon_indices]
+            self.y = self.y[lat_indices]
+            elev_indices = np.outer(lat_indices, lon_indices)
+            self.z = self.z[elev_indices]
+            self.compute_nx_ny()
+
+    def generate_vertex(self):
+        vertex = np.zeros((self.nx * self.ny, 3))
+        xv, yv = np.meshgrid(self.x, self.y)
+        vertex[:, 0] = xv.flatten()
+        vertex[:, 1] = yv.flatten()
+        vertex[:, 2] = self.z.flatten()
+        self.vertex = vertex
+
+    def proj_vertex(self, sProj):
+        import pyproj
+
+        lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
+        if args.proj[0] != "geocent":
+            myproj = pyproj.Proj(sProj)
+        else:
+            myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
+
+        print("projecting the node coordinates")
+        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        print(self.vertex)
+        print("done projecting")
+
+    def generate_connect(self):
+        ntriangles = 2 * (self.nx - 1) * (self.ny - 1)
+        connect = np.zeros((ntriangles, 3), dtype=int)
+        k = 0
+        for j in range(self.ny - 1):
+            for i in range(self.nx - 1):
+                connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + 1 + (j + 1) * self.nx]
+                connect[k + 1, :] = [i + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
+                k = k + 2
+        self.connect = connect
+
+    def isolate_hole(self, argHole):
+        nconnect = self.connect.shape[0]
+        self.solid_id = np.zeros(nconnect, dtype=int)
+        if argHole != None:
+            x0, x1, y0, y1 = argHole
+            print("tagging hole...")
+            for k in range(nconnect):
+                xmin, ymin = self.vertex[self.connect[k, 0], 0:2]
+                xmax, ymax = self.vertex[self.connect[k, 2], 0:2]
+                if ((xmin > x0) & (xmax < x1)) & ((ymin > y0) & (ymax < y1)):
+                    self.solid_id[k] = 1
+                    print(k)
+                else:
+                    self.solid_id[k] = 0
+            print(max(self.solid_id))
+            print("done tagging hole")
+
+
+from Face import Face
 
 parser = argparse.ArgumentParser(description="create surface from a GEBCO netcdf file")
 parser.add_argument("input_file", help="GEBCO netcdf file")
 parser.add_argument("output_file", help="gocad or stl output file")
 parser.add_argument("--subsample", nargs=1, type=int, metavar=("onesample_every"), default=[1], help="use only one value every onesample_every in both direction")
 parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
-parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), default=(""), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)")
-parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), default=(""), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1")
+parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
+parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
 parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
 args = parser.parse_args()
 
@@ -35,181 +161,24 @@ if args.objectname == "":
 else:
     args.objectname = args.objectname[0]
 
+structured_grid = Grid(args.input_file, args.subsample[0])
+structured_grid.crop(args.crop)
+structured_grid.generate_vertex()
+
+structured_grid.generate_connect()
+structured_grid.isolate_hole(args.hole)
 if args.proj != "":
-    print("Projecting the nodes coordinates")
-    import pyproj
+    structured_grid.proj_vertex(args.proj[0])
 
-    lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    if args.proj[0] != "geocent":
-        sProj = args.proj[0]
-        myproj = pyproj.Proj(sProj)
-    else:
-        myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
+basename, ext = os.path.splitext(args.output_file)
+nsolid = max(structured_grid.solid_id) + 1
 
-if args.hole != "":
-    print("a hole will be isolated in the surface (stl only)")
-    x0hole = float(args.hole[0])
-    x1hole = float(args.hole[1])
-    y0hole = float(args.hole[2])
-    y1hole = float(args.hole[3])
-    print("hole coordinates %f %f %f %f" % (x0hole, x1hole, y0hole, y1hole))
-
-if args.crop != "":
-    print("crop the geometry")
-    x0crop = float(args.crop[0])
-    x1crop = float(args.crop[1])
-    y0crop = float(args.crop[2])
-    y1crop = float(args.crop[3])
-    print("only consider %e < lon < %e, %e < lat < %e" % (x0crop, x1crop, y0crop, y1crop))
-
-fh = Dataset(args.input_file, mode="r")
-
-if "lon" in fh.variables.keys():
-    xvar = "lon"
-elif "x" in fh.variables.keys():
-    xvar = "x"
+if nsolid == 1:
+    myFace = Face(structured_grid.connect)
+    myFace.write(f"{basename}{ext}", structured_grid.vertex)
 else:
-    print("could not determine x variable")
-    exit()
-
-if "lat" in fh.variables.keys():
-    yvar = "lat"
-elif "y" in fh.variables.keys():
-    yvar = "y"
-else:
-    print("could not determine y variable")
-    exit()
-
-
-if "elevation" in fh.variables.keys():
-    altitudevar = "elevation"
-elif "Band1" in fh.variables.keys():
-    altitudevar = "Band1"
-elif "z" in fh.variables.keys():
-    altitudevar = "z"
-else:
-    print("could not determine altitude variable")
-    exit()
-
-
-lat = fh.variables[yvar][0 :: args.subsample[0]]
-lon = fh.variables[xvar][0 :: args.subsample[0]]
-elevation = fh.variables[altitudevar][0 :: args.subsample[0], 0 :: args.subsample[0]] / 1000.0
-
-if args.crop != "":
-    lon_indices = np.logical_and(lon > x0crop, lon < x1crop)
-    lat_indices = np.logical_and(lat > y0crop, lat < y1crop)
-    lon = lon[lon_indices]
-    lat = lat[lat_indices]
-    elev_indices = np.outer(lat_indices, lon_indices)
-    elevation = elevation[elev_indices]
-
-
-NX = np.shape(lon)[0]
-NY = np.shape(lat)[0]
-elevation = np.reshape(elevation, (NY, NX))
-
-nnodes = NX * NY
-ntriangles = 2 * (NX - 1) * (NY - 1)
-
-nodes = np.zeros((nnodes, 3))
-triangles = np.zeros((ntriangles, 3))
-
-xv, yv = np.meshgrid(lon, lat)
-nodes[:, 0] = xv.flatten()
-nodes[:, 1] = yv.flatten()
-nodes[:, 2] = elevation.flatten()
-del xv, yv, elevation
-
-k = 0
-for j in range(NY - 1):
-    for i in range(NX - 1):
-        triangles[k, :] = [i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX]
-        triangles[k + 1, :] = [i + j * NX, i + (j + 1) * NX, i + 1 + (j + 1) * NX]
-        k = k + 2
-
-triangles = triangles.astype(int)
-
-solid_id = np.zeros(ntriangles)
-if args.hole != "":
-    print("tagging hole...")
-    for k in range(ntriangles):
-        xmin = nodes[triangles[k, 0], 0]
-        xmax = nodes[triangles[k, 2], 0]
-        ymin = nodes[triangles[k, 0], 1]
-        ymax = nodes[triangles[k, 2], 1]
-        if ((xmin > x0hole) & (xmax < x1hole)) & ((ymin > y0hole) & (ymax < y1hole)):
-            solid_id[k] = 1
-        else:
-            solid_id[k] = 0
-    print("done tagging hole")
-nsolid = int(max(solid_id))
-
-
-if args.proj != "":
-    print("projecting the node coordinates")
-    x0, y0, z0 = pyproj.transform(lla, myproj, nodes[:, 0], nodes[:, 1], 1e3 * nodes[:, 2], radians=False)
-    nodes[:, 0] = x0
-    nodes[:, 1] = y0
-    nodes[:, 2] = z0
-    print(nodes)
-    print("done projecting")
-    del x0, y0, z0
-
-_, ext = os.path.splitext(args.output_file)
-
-if ext == ".ts":
-    fout = open(args.output_file, "w")
-    for sid in range(nsolid + 1):
-        fout.write("GOCAD TSURF 1\nHEADER {\nname:" + args.objectname + str(sid) + "\n}\nTRIANGLES\n")
-        if args.hole == "":
-            # if no hole tagged, we can skip the where and unique routine of below
-            idtr = range(ntriangles)
-            Vid = range(1, nnodes + 1)
-        else:
-            idtr = np.where(solid_id == sid)[0]
-            Vid = np.unique(triangles[idtr, :].flatten())
-        for k in Vid:
-            fout.write("VRTX %d %f %f %f\n" % (k, nodes[k, 0], nodes[k, 1], nodes[k, 2]))
-        for k in idtr:
-            fout.write("TRGL %d %d %d\n" % (triangles[k, 0], triangles[k, 1], triangles[k, 2]))
-        fout.write("END\n")
-elif ext == ".stl":
-    # compute efficiently the normals
-    print("computing the normals...")
-    normal = np.cross(nodes[triangles[:, 1], :] - nodes[triangles[:, 0], :], nodes[triangles[:, 2], :] - nodes[triangles[:, 0], :])
-    norm = np.apply_along_axis(np.linalg.norm, 1, normal)
-    normal = normal / norm.reshape((ntriangles, 1))
-    print("done computing the normals")
-    fout = open(args.output_file, "w")
-    for sid in range(nsolid + 1):
-        fout.write("solid %s%d\n" % (args.objectname, sid))
-        idtr = np.where(solid_id == sid)[0]
-        for k in idtr:
-            fout.write("facet normal %e %e %e\n" % tuple(normal[k, :]))
-            fout.write("outer loop\n")
-            for i in range(0, 3):
-                fout.write("vertex %.10e %.10e %.10e\n" % tuple(nodes[triangles[k, i], :]))
-            fout.write("endloop\n")
-            fout.write("endfacet\n")
-        fout.write("endsolid %s%d\n" % (args.objectname, sid))
-elif ext == ".bstl":
-    import struct
-
-    fout = open(args.output_file, "wb")
-    fout.seek(80)
-    fout.write(struct.pack("<L", ntriangles))
-    for sid in range(nsolid + 1):
-        idtr = np.where(solid_id == sid)[0]
-        for k in idtr:
-            normal = np.cross(nodes[triangles[k, 1], :] - nodes[triangles[k, 0], :], nodes[triangles[k, 2], :] - nodes[triangles[k, 0], :])
-            norm = np.linalg.norm(normal)
-            normal = normal / norm
-            fout.write(struct.pack("<3f", *normal))
-            for i in range(0, 3):
-                fout.write(struct.pack("<3f", *nodes[triangles[k, i], :]))
-            fout.write(struct.pack("<H", sid))
-else:
-    print("only bsl, stl and ts are valid output formats")
-
-fout.close()
+    for sid in range(nsolid):
+        idtr = np.where(structured_grid.solid_id == sid)[0]
+        aVid = np.unique(structured_grid.connect[idtr, :].flatten())
+        myFace = Face(structured_grid.connect[idtr, :])
+        myFace.write(f"{basename}{sid}{ext}", structured_grid.vertex, write_full_vertex_array=False)
