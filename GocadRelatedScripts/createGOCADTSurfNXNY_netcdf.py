@@ -120,8 +120,15 @@ class Grid:
         k = 0
         for j in range(self.ny - 1):
             for i in range(self.nx - 1):
-                connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + 1 + (j + 1) * self.nx]
-                connect[k + 1, :] = [i + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
+                # edge perpendicular to the max gradient
+                dz_diag1 = abs(self.vertex[i + j * self.nx, 2] - self.vertex[i + 1 + (j + 1) * self.nx, 2])
+                dz_diag2 = abs(self.vertex[i + (j + 1) * self.nx, 2] - self.vertex[i + 1 + j * self.nx, 2])
+                if dz_diag1 > dz_diag2:
+                    connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + (j + 1) * self.nx]
+                    connect[k + 1, :] = [i + 1 + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
+                else:
+                    connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + 1 + (j + 1) * self.nx]
+                    connect[k + 1, :] = [i + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
                 k = k + 2
         self.connect = connect
 
