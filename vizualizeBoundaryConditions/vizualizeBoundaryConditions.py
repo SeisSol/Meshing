@@ -1,6 +1,7 @@
-from submodules.pythonXdmfReader.pythonXdmfReader import *
+import seissolxdmf as sx
 import numpy as np
 import argparse
+import os
 
 def CreateXdmf(fn, nNodes, ntriangles, aDataName):
    xdmf="""<?xml version="1.0" ?>
@@ -57,10 +58,10 @@ def write_xdmfh5(fname, aDataName, xyz, connect, BC):
 
 
 def ReadHdf5PosixForBoundaryPlotting(filename):
-   xyz = ReadGeometry(args.filename)
-   tetra = ReadConnect(args.filename)
+   xyz = sx.ReadGeometry(args.filename)
+   tetra = sx.ReadConnect(args.filename)
    nElements=np.shape(tetra)[0]
-   boundary,data_prec = LoadData(args.filename, 'boundary', nElements, 0, True)
+   boundary = sx.ReadDataChunk(args.filename, 'boundary', firstElement=0, nchunk=nElements, idt=0)
    NS=0
    SufaceId= int(args.BC)
    for faceId in range(0,4):
@@ -70,9 +71,7 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
       else:
          tetraId = np.where(boundaryFace==SufaceId)[0]
       NS = NS + len(tetraId)
-   if NS==0:
-      print("NS==0")
-      stop
+   assert(NS!=0)
    connect=np.zeros((NS,3), dtype=int)
    BC=np.zeros((1,NS))
 
