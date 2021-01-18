@@ -114,6 +114,10 @@ class Grid:
         print(self.vertex)
         print("done projecting")
 
+    def translate(self):
+        self.vertex[:, 0] = self.vertex[:, 0] + args.translate[0]
+        self.vertex[:, 1] = self.vertex[:, 1] + args.translate[1]
+
     def generate_connect(self):
         ntriangles = 2 * (self.nx - 1) * (self.ny - 1)
         connect = np.zeros((ntriangles, 3), dtype=int)
@@ -139,11 +143,13 @@ class Grid:
             x0, x1, y0, y1 = argHole
             print("tagging hole...")
             for k in range(nconnect):
-                xmin, ymin = self.vertex[self.connect[k, 0], 0:2]
-                xmax, ymax = self.vertex[self.connect[k, 2], 0:2]
+                coords = self.vertex[self.connect[k, :], 0:2]
+                xmin = min(coords[:,0])
+                xmax = max(coords[:,0])
+                ymin = min(coords[:,1])
+                ymax = max(coords[:,1])
                 if ((xmin > x0) & (xmax < x1)) & ((ymin > y0) & (ymax < y1)):
                     self.solid_id[k] = 1
-                    print(k)
                 else:
                     self.solid_id[k] = 0
             print(max(self.solid_id))
@@ -160,6 +166,7 @@ parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""
 parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
 parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
 parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
 args = parser.parse_args()
 
 if args.objectname == "":
@@ -176,6 +183,8 @@ structured_grid.generate_connect()
 structured_grid.isolate_hole(args.hole)
 if args.proj != "":
     structured_grid.proj_vertex(args.proj[0])
+
+structured_grid.translate()
 
 basename, ext = os.path.splitext(args.output_file)
 nsolid = max(structured_grid.solid_id) + 1
