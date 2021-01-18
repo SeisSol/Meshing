@@ -1,4 +1,4 @@
-import seissolxdmf as sx
+import seissolxdmf
 import numpy as np
 import argparse
 import os
@@ -55,13 +55,14 @@ args = parser.parse_args()
 
 xc = args.xc[0]
 iN = args.normal[0]
-xyz = sx.ReadGeometry(args.filename)
-tetra = sx.ReadConnect(args.filename)
+sx = seissolxdmf.seissolxdmf(args.filename)
+xyz = sx.ReadGeometry()
+tetra = sx.ReadConnect()
 nNodes=np.shape(xyz)[0]
 nElements=np.shape(tetra)[0]
 
-boundary = sx.ReadDataChunk(args.filename, 'boundary', firstElement=0, nchunk=nElements, idt=0)
-group = sx.ReadDataChunk(args.filename, 'group', firstElement=0, nchunk=nElements, idt=0)
+boundary = sx.ReadDataChunk('boundary', firstElement=0, nchunk=nElements, idt=0)
+group = sx.ReadDataChunk('group', firstElement=0, nchunk=nElements, idt=0)
 
 #Create Lookup and inverse Look table to relate old and new nodes
 nodesLU = {}
