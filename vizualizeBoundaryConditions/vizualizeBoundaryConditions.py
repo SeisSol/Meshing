@@ -1,4 +1,4 @@
-import seissolxdmf as sx
+import seissolxdmf
 import numpy as np
 import argparse
 import os
@@ -58,10 +58,11 @@ def write_xdmfh5(fname, aDataName, xyz, connect, BC):
 
 
 def ReadHdf5PosixForBoundaryPlotting(filename):
-   xyz = sx.ReadGeometry(args.filename)
-   tetra = sx.ReadConnect(args.filename)
+   sx = seissolxdmf.seissolxdmf(filename)
+   xyz = sx.ReadGeometry()
+   tetra = sx.ReadConnect()
    nElements=np.shape(tetra)[0]
-   boundary = sx.ReadDataChunk(args.filename, 'boundary', firstElement=0, nchunk=nElements, idt=0)
+   boundary = sx.ReadDataChunk('boundary', firstElement=0, nchunk=nElements, idt=0)
    NS=0
    SufaceId= int(args.BC)
    for faceId in range(0,4):
