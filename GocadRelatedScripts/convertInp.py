@@ -47,7 +47,11 @@ def ParseInp(fname, bIsolate):
 
     myFace = Face(np.asarray(triangles))
     faces.append(myFace)
-    return vertex, vid_lookup, faces
+
+    for myFace in faces:
+        myFace.reindex(vid_lookup)
+
+    return vertex, faces
 
 
 parser = argparse.ArgumentParser(description="convert inp (from SimModeler5 2d mesh (ABAQUS 2D)) to ts (Gocad), stl or bstl")
@@ -61,10 +65,7 @@ if args.output_filename == "":
     args.output_filename = args.inp_filename[0:-4] + ".ts"
 basename, ext = os.path.splitext(args.output_filename)
 
-vertex, vid_lookup, faces = ParseInp(args.inp_filename, args.isolate)
-
-for i, myFace in enumerate(faces):
-    myFace.reindex(vid_lookup)
+vertex, faces = ParseInp(args.inp_filename, args.isolate)
 
 for i, myFace in enumerate(faces):
     fname = basename + str(i) + ext
