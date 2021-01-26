@@ -2,23 +2,11 @@ import numpy as np
 from netCDF4 import Dataset
 
 # Author: Thomas Ulrich, LMU
-# (inspired from a script by J. Klicpera)
 # create surface from a structured grid of nodes
 
-# Mesh example:
-
-# 3 - 3
-#  /
-# 2 - 2
-#  /
-# 1 - 1
-
 import sys
-
-# parsing python arguments
 import argparse
 import os
-from collections import defaultdict
 
 
 class Grid:
@@ -27,7 +15,7 @@ class Grid:
         basename, ext = os.path.splitext(fname)
         if ext == ".nc":
             self.read_netcdf(fname, downsample)
-        elif ext == ".esri":
+        elif ext in [".esri", ".asc"]:
             print("Warning might not work (not tested)")
             self.read_ascii_esri(fname, downsample)
         else:
@@ -35,6 +23,8 @@ class Grid:
         self.compute_nx_ny()
 
     def read_ascii_esri(self, fname, downsample):
+        "read ESRI ASCII Raster format, see e.g."
+        "https://desktop.arcgis.com/en/arcmap/latest/manage-data/raster-and-images/esri-ascii-raster-format.htm"
         with open(fname) as fh:
             # Read header
             NX = int(fh.readline().split()[1])
@@ -55,9 +45,11 @@ class Grid:
             self.x = self.x[0::downsample]
             self.y = self.y[0::downsample]
             self.z = self.z[0::downsample, 0::downsample]
+            self.compute_nx_ny()
             print("done reading")
 
     def read_netcdf(self, fname, downsample):
+        "read netcdf Raster file"
         fh = Dataset(fname, mode="r")
         self.keys = fh.variables.keys()
         xvar = self.determine_netcdf_variables(["lon", "x"])
@@ -74,12 +66,14 @@ class Grid:
         print(self.nx, self.ny)
 
     def determine_netcdf_variables(self, l_possible_names):
+        "search within the netcdf for variable name from a possible list of candidates"
         for name in l_possible_names:
             if name in self.keys:
                 return name
         raise ("could not determine netcdf variable")
 
     def crop(self, argCrop):
+        "crop the grid, by removing nodes out of the given latitude and longitude range"
         if argCrop != None:
             x0, x1, y0, y1 = argCrop
             print("crop the grid")
@@ -101,6 +95,7 @@ class Grid:
         self.vertex = vertex
 
     def proj_vertex(self, sProj):
+        "project the node coordinate array"
         import pyproj
 
         lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
@@ -119,6 +114,8 @@ class Grid:
         self.vertex[:, 1] = self.vertex[:, 1] + args.translate[1]
 
     def generate_connect(self):
+        "triangulate the structured grid of vertex."
+        "place the diagonal perpendicular to the max height gradient"
         ntriangles = 2 * (self.nx - 1) * (self.ny - 1)
         connect = np.zeros((ntriangles, 3), dtype=int)
         k = 0
@@ -137,6 +134,8 @@ class Grid:
         self.connect = connect
 
     def isolate_hole(self, argHole):
+        "tag a rectangular region within the grid."
+        "solid_id=1 in the tagged region, 0 else"
         nconnect = self.connect.shape[0]
         self.solid_id = np.zeros(nconnect, dtype=int)
         if argHole != None:
@@ -144,15 +143,16 @@ class Grid:
             print("tagging hole...")
             for k in range(nconnect):
                 coords = self.vertex[self.connect[k, :], 0:2]
-                xmin = min(coords[:,0])
-                xmax = max(coords[:,0])
-                ymin = min(coords[:,1])
-                ymax = max(coords[:,1])
+                xmin = min(coords[:, 0])
+                xmax = max(coords[:, 0])
+                ymin = min(coords[:, 1])
+                ymax = max(coords[:, 1])
                 if ((xmin > x0) & (xmax < x1)) & ((ymin > y0) & (ymax < y1)):
                     self.solid_id[k] = 1
                 else:
                     self.solid_id[k] = 0
-            print(max(self.solid_id))
+            if max(self.solid_id) == 0:
+                raise ValueError("no hole was tagged")
             print("done tagging hole")
 
 
