@@ -62,11 +62,28 @@ for i in range(nvertex):
 triangles = []
 for j in range(ny - 1):
     for i in range(nx - 1):
-        if not np.any(np.isnan([z[j, i], z[j, i + 1], z[j + 1, i + 1]])):
-            triangles.append([1 + i + j * nx, 1 + i + 1 + j * nx, 1 + i + 1 + (j + 1) * nx])
-        if not np.any(np.isnan([z[j, i], z[j + 1, i + 1], z[j + 1, i]])):
-            triangles.append([1 + i + j * nx, 1 + i + 1 + (j + 1) * nx, 1 + i + (j + 1) * nx])
+        if not np.any(np.isnan(z[j : j + 2, i : i + 2])):
+            "place the diagonal perpendicular to the max height gradient"
+            dz_diag1 = abs(z[j, i] - z[j + 1, i + 1])
+            dz_diag2 = abs(z[j + 1, i] - z[j, i + 1])
+            if dz_diag1 > dz_diag2:
+                triangles.append([1 + i + j * nx, 1 + i + 1 + j * nx, 1 + i + (j + 1) * nx])
+                triangles.append([1 + i + 1 + j * nx, 1 + i + 1 + (j + 1) * nx, 1 + i + (j + 1) * nx])
+            else:
+                triangles.append([1 + i + j * nx, 1 + i + 1 + j * nx, 1 + i + 1 + (j + 1) * nx])
+                triangles.append([1 + i + j * nx, 1 + i + 1 + (j + 1) * nx, 1 + i + (j + 1) * nx])
+        else:
+            if not np.any(np.isnan([z[j, i], z[j, i + 1], z[j + 1, i + 1]])):
+                triangles.append([1 + i + j * nx, 1 + i + 1 + j * nx, 1 + i + 1 + (j + 1) * nx])
+            elif not np.any(np.isnan([z[j, i], z[j + 1, i + 1], z[j + 1, i]])):
+                triangles.append([1 + i + j * nx, 1 + i + 1 + (j + 1) * nx, 1 + i + (j + 1) * nx])
+            elif not np.any(np.isnan([z[j, i], z[j, i + 1], z[j + 1, i]])):
+                triangles.append([1 + i + j * nx, 1 + i + 1 + j * nx, 1 + i + (j + 1) * nx])
+            elif not np.any(np.isnan([z[j, i + 1], z[j + 1, i + 1], z[j + 1, i]])):
+                triangles.append([1 + i + 1 + j * nx, 1 + i + 1 + (j + 1) * nx, 1 + i + (j + 1) * nx])
 
+if args.proj != "":
+    xx, yy, z = pyproj.transform(lla, myproj, xx[:, :], yy[:, :], 1e3 * z[:, :], radians=False)
 
 fout = open(args.output_file, "w")
 ### WRITE THE GOCAD TS FILE
@@ -74,12 +91,9 @@ fout.write("GOCAD TSURF 1\nHEADER {\nname:" + args.objectname + "\n}\nTRIANGLES\
 for j in range(0, ny):
     for i in range(0, nx):
         if not np.isnan(z[j, i]):
-            if args.proj != "":
-                xyz = pyproj.transform(lla, myproj, xx[j, i], yy[j, i], 1e3 * z[j, i], radians=False)
-                fout.write("VRTX " + str(i + j * nx + 1) + " %.10e %.10e %.10e\n" % tuple(xyz))
-            else:
-                fout.write("VRTX %d %f %f %f\n" % (i + j * nx + 1, xx[j, i], yy[j, i], z[j, i]))
+            fout.write("VRTX %d %f %f %f\n" % (i + j * nx + 1, xx[j, i], yy[j, i], z[j, i]))
 for tr in triangles:
     fout.write("TRGL %d %d %d\n" % (tr[0], tr[1], tr[2]))
 fout.write("END")
 fout.close()
+print("done writing", args.output_file)
