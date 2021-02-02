@@ -91,6 +91,7 @@ class Grid:
             elev_indices = np.outer(lat_indices, lon_indices)
             self.z = self.z[elev_indices]
             self.compute_nx_ny()
+            self.z = self.z.reshape(self.ny, self.nx)
 
     def generate_vertex(self):
         vertex = np.zeros((self.nx * self.ny, 3))
