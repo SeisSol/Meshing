@@ -13,6 +13,9 @@ class Grid:
     def __init__(self, fname, downsample):
 
         basename, ext = os.path.splitext(fname)
+        # is there nan in the dataset (e.g. slab2 data?)
+        self.is_sparse = False
+
         if ext == ".nc":
             self.read_netcdf(fname, downsample)
         elif ext in [".esri", ".asc"]:
@@ -58,6 +61,9 @@ class Grid:
         self.x = fh.variables[xvar][0::downsample]
         self.y = fh.variables[yvar][0::downsample]
         self.z = fh.variables[zvar][0::downsample, 0::downsample]
+        if np.ma.is_masked(self.z):
+            self.z = np.ma.filled(self.z, float("nan")) * 1e3
+            self.is_sparse = True
         self.compute_nx_ny()
 
     def compute_nx_ny(self):
@@ -114,6 +120,12 @@ class Grid:
         self.vertex[:, 1] = self.vertex[:, 1] + args.translate[1]
 
     def generate_connect(self):
+        if not self.is_sparse:
+            self.generate_connect_full()
+        else:
+            self.generate_connect_sparse()
+
+    def generate_connect_full(self):
         "triangulate the structured grid of vertex."
         "place the diagonal perpendicular to the max height gradient"
         ntriangles = 2 * (self.nx - 1) * (self.ny - 1)
@@ -132,6 +144,49 @@ class Grid:
                     connect[k + 1, :] = [i + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
                 k = k + 2
         self.connect = connect
+
+    def generate_connect_sparse(self):
+        "triangulate the structured grid of vertex."
+        "do not triangulate vertex with nan z value (used for reading Slab2.0 data)"
+        triangles = []
+        for j in range(self.ny - 1):
+            for i in range(self.nx - 1):
+                if not np.any(np.isnan(self.z[j : j + 2, i : i + 2])):
+                    "place the diagonal perpendicular to the max height gradient"
+                    dz_diag1 = abs(self.z[j, i] - self.z[j + 1, i + 1])
+                    dz_diag2 = abs(self.z[j + 1, i] - self.z[j, i + 1])
+                    if dz_diag1 > dz_diag2:
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + (j + 1) * self.nx])
+                        triangles.append([1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                    else:
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx])
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                else:
+                    if not np.any(np.isnan([self.z[j, i], self.z[j, i + 1], self.z[j + 1, i + 1]])):
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx])
+                    elif not np.any(np.isnan([self.z[j, i], self.z[j + 1, i + 1], self.z[j + 1, i]])):
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                    elif not np.any(np.isnan([self.z[j, i], self.z[j, i + 1], self.z[j + 1, i]])):
+                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + (j + 1) * self.nx])
+                    elif not np.any(np.isnan([self.z[j, i + 1], self.z[j + 1, i + 1], self.z[j + 1, i]])):
+                        triangles.append([1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+        self.connect = np.array(triangles)
+        self.remove_nan_generate_vid_lookup()
+
+    def remove_nan_generate_vid_lookup(self):
+        " Generate vertex lookup array for reindexing"
+        nvertex = self.vertex.shape[0]
+        idv = np.linspace(0, nvertex - 1, nvertex, dtype=int)
+        valid = ~np.isnan(self.vertex)[:, 2]
+        # remove all entries with nan
+        self.vertex = self.vertex[valid == True, :]
+        # id of valid entries
+        id_valid = idv[valid == True] + 1
+        nvalid = id_valid.shape[0]
+        # Fill in vertex lookup array for reindexing
+        self.vid_lookup = {}
+        for i in range(nvalid):
+            self.vid_lookup[id_valid[i]] = i
 
     def isolate_hole(self, argHole):
         "tag a rectangular region within the grid."
@@ -189,12 +244,17 @@ structured_grid.translate()
 basename, ext = os.path.splitext(args.output_file)
 nsolid = max(structured_grid.solid_id) + 1
 
+
 if nsolid == 1:
     myFace = Face(structured_grid.connect)
+    if structured_grid.is_sparse:
+        myFace.reindex(structured_grid.vid_lookup)
     myFace.write(f"{basename}{ext}", structured_grid.vertex)
 else:
     for sid in range(nsolid):
         idtr = np.where(structured_grid.solid_id == sid)[0]
         aVid = np.unique(structured_grid.connect[idtr, :].flatten())
         myFace = Face(structured_grid.connect[idtr, :])
+        if structured_grid.is_sparse:
+            myFace.reindex(structured_grid.vid_lookup)
         myFace.write(f"{basename}{sid}{ext}", structured_grid.vertex, write_full_vertex_array=False)
