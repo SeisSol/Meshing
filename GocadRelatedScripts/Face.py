@@ -3,13 +3,94 @@ import numpy as np
 
 
 class Face:
-    def __init__(self, connect):
+    def __init__(self, vertex, connect):
 
         self.connect = connect
+        self.vertex = vertex
         self.local_vid_lookup = {}
         # for i, ivx in enumerate(self.id_vertex):
         #    self.local_vid_lookup[ivx] = i
         self.ntriangles = self.connect.shape[0]
+
+    @classmethod
+    def from_ts(self, fid):
+        surface_name = "undefined"
+        xyzl = []
+        vid = {}
+        trl = []
+        prev_vert = -1
+        ivertex = 0
+        line = fid.readline()
+        if not line:
+            return None
+        title = line.split()
+        # Skip everything not Surface
+        if title[1].lower() != "tsurf":
+            print("skipping %s" % (title[1]))
+            while True:
+                line = fid.readline()
+                if not line:
+                    break
+                if line.startswith("END_"):
+                    continue
+                elif line.startswith("END"):
+                    break
+        else:
+            while True:
+                line = fid.readline()
+                if not line:
+                    break
+                if line.startswith("VRTX"):
+                    val = [float(val) for val in line.split()[1:5]]
+                    newVid = int(val[0])
+                    vid[newVid] = ivertex
+                    ivertex = ivertex + 1
+                    xyzl.append(val[1:4])
+                elif line.startswith("TRGL"):
+                    val = [int(val) for val in line.split()[1:4]]
+                    trl.append(val)
+                elif line.startswith("END_"):
+                    continue
+                elif line.startswith("name"):
+                    surface_name = (line.split(":")[1]).strip()
+                    print("now processing %s" % surface_name)
+                elif line.startswith("ATOM"):
+                    val = [int(val) for val in line.split()[1:3]]
+                    vid0 = vid[val[1]]
+                    xyzl.append(xyzl[vid0])
+                    vid[val[0]] = ivertex
+                    ivertex = ivertex + 1
+                elif line.startswith("END"):
+                    break
+            vertex = np.asarray(xyzl)
+            connect = np.asarray(trl)
+            myFace = Face(vertex, connect)
+            myFace.reindex(vid)
+            return myFace
+
+    def proj(self, sProj):
+        "project the node coordinate array"
+        import pyproj
+        lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
+        if args.proj[0] != "geocent":
+            myproj = pyproj.Proj(sProj)
+        else:
+            myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
+
+        print("projecting the node coordinates")
+        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        print(self.vertex)
+        print("done projecting")
+
+    def scale_vertex(self, scale):
+        "convert vertex array to km"
+        for i in range(3):
+            self.vertex[:, i] = self.vertex[:, i] * scale[i]
+
+    def translate_vertex(self, translation):
+        "convert vertex array to km"
+        for i in range(3):
+            self.vertex[:, i] = self.vertex[:, i] + translation[i]
 
     def compute_id_vertex(self):
         "id_vertex is an array with the id of all vertex forming the face"
@@ -27,7 +108,7 @@ class Face:
             for iv in range(3):
                 self.connect[itr, iv] = vid_lookup[self.connect[itr, iv]]
 
-    def writeTs(self, fname, vertex, write_full_vertex_array=True, append=False):
+    def __writeTs(self, fname, vertex, write_full_vertex_array=True, append=False):
         """ output face as a *.ts file
              vertex: nodes coordinates array
         """
@@ -47,14 +128,14 @@ class Face:
                 fout.write("TRGL %d %d %d\n" % (self.connect[i, 0] + 1, self.connect[i, 1] + 1, self.connect[i, 2] + 1))
             fout.write("END\n")
 
-    def computeNormal(self, vertex):
+    def __computeNormal(self, vertex):
         " compute efficiently the normals "
         normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :])
         norm = np.apply_along_axis(np.linalg.norm, 1, normal)
         self.normal = normal / norm.reshape((self.ntriangles, 1))
 
-    def writeStl(self, fname, vertex, append=False):
-        self.computeNormal(vertex)
+    def __writeStl(self, fname, vertex, append=False):
+        self.__computeNormal(vertex)
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
             fout.write(f"solid {fname}\n")
@@ -67,29 +148,31 @@ class Face:
                 fout.write("endfacet\n")
             fout.write(f"endsolid {fname}\n")
 
-    def writebStl(self, fname, vertex):
+    def __writebStl(self, fname, vertex):
         import struct
 
         fout = open(fname, "wb")
         fout.seek(80)
         fout.write(struct.pack("<L", self.ntriangles))
-        self.computeNormal(vertex)
+        self.__computeNormal(vertex)
         for k in range(self.ntriangles):
             fout.write(struct.pack("<3f", *self.normal[k, :]))
             for i in range(0, 3):
                 fout.write(struct.pack("<3f", *vertex[self.connect[k, i], :]))
             fout.write(struct.pack("<H", 0))
 
-    def write(self, fname, vertex, write_full_vertex_array=True, append=False):
+    def write(self, fname, vertex=np.empty(0), write_full_vertex_array=True, append=False):
         import os
+        if vertex.shape[0]==0:
+            vertex = self.vertex
 
         basename, ext = os.path.splitext(fname)
         if ext == ".ts":
-            self.writeTs(fname, vertex, write_full_vertex_array, append)
+            self.__writeTs(fname, vertex, write_full_vertex_array, append)
         elif ext == ".stl":
-            self.writeStl(fname, vertex, append)
+            self.__writeStl(fname, vertex, append)
         elif ext == ".bstl":
-            self.writebStl(fname, vertex)
+            self.__writebStl(fname, vertex)
         else:
             raise ValueError("format not supported", ext)
         print("done writing " + fname)
