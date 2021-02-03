@@ -68,16 +68,29 @@ class Face:
             myFace.reindex(vid)
             return myFace
 
-    def proj(self, sProj):
-        "project the node coordinate array"
+    def setup_proj_objects(self, sProj):
         import pyproj
         lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-        if args.proj[0] != "geocent":
+        if sProj != "geocent":
             myproj = pyproj.Proj(sProj)
         else:
             myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
+        return lla, myproj
 
+    def proj(self, sProj):
+        "project the node coordinate array"
+        import pyproj
+        lla, myproj = self.setup_proj_objects(sProj)
         print("projecting the node coordinates")
+        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        print(self.vertex)
+        print("done projecting")
+
+    def proj_to_latlon(self, sProj):
+        "project the node coordinate array"
+        import pyproj
+        lla, myproj = self.setup_proj_objects(sProj)
+        print("projecting the node coordinates to geographic coords")
         self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
         print(self.vertex)
         print("done projecting")
