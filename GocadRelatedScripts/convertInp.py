@@ -45,7 +45,7 @@ def ParseInp(fname, bIsolate):
         val = [int(v) for v in lines[i].split(",")[1:4]]
         triangles.append(val)
 
-    myFace = Face(vertex = None, connect = np.asarray(triangles))
+    myFace = Face(vertex=None, connect=np.asarray(triangles))
     faces.append(myFace)
 
     for myFace in faces:

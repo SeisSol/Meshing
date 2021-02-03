@@ -70,6 +70,7 @@ class Face:
 
     def setup_proj_objects(self, sProj):
         import pyproj
+
         lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
         if sProj != "geocent":
             myproj = pyproj.Proj(sProj)
@@ -80,6 +81,7 @@ class Face:
     def proj(self, sProj):
         "project the node coordinate array"
         import pyproj
+
         lla, myproj = self.setup_proj_objects(sProj)
         print("projecting the node coordinates")
         self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
@@ -89,6 +91,7 @@ class Face:
     def proj_to_latlon(self, sProj):
         "project the node coordinate array"
         import pyproj
+
         lla, myproj = self.setup_proj_objects(sProj)
         print("projecting the node coordinates to geographic coords")
         self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
@@ -176,7 +179,8 @@ class Face:
 
     def write(self, fname, vertex=np.empty(0), write_full_vertex_array=True, append=False):
         import os
-        if vertex.shape[0]==0:
+
+        if vertex.shape[0] == 0:
             vertex = self.vertex
 
         basename, ext = os.path.splitext(fname)

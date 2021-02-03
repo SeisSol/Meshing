@@ -19,7 +19,7 @@ basename, ext = os.path.splitext(args.ts_file)
 with open(args.ts_file) as fid:
     while True:
         myFace = Face.from_ts(fid)
-        if  myFace == None:
+        if myFace == None:
             break
         if args.proj != None:
             myFace.proj(args.proj[0])

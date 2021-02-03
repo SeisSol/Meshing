@@ -255,7 +255,7 @@ else:
     for sid in range(nsolid):
         idtr = np.where(structured_grid.solid_id == sid)[0]
         aVid = np.unique(structured_grid.connect[idtr, :].flatten())
-        myFace = Face(vertex = None, connect = structured_grid.connect[idtr, :])
+        myFace = Face(vertex=None, connect=structured_grid.connect[idtr, :])
         if structured_grid.is_sparse:
             myFace.reindex(structured_grid.vid_lookup)
         myFace.write(f"{basename}{sid}{ext}", structured_grid.vertex, write_full_vertex_array=False)
