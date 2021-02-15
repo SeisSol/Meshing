@@ -8,8 +8,6 @@ class Face:
         self.connect = connect
         self.vertex = vertex
         self.local_vid_lookup = {}
-        # for i, ivx in enumerate(self.id_vertex):
-        #    self.local_vid_lookup[ivx] = i
         self.ntriangles = self.connect.shape[0]
 
     @classmethod
@@ -88,35 +86,31 @@ class Face:
         print(self.vertex)
         print("done projecting")
 
-    def proj_to_latlon(self, sProj):
-        "project the node coordinate array"
+    def convert_projected_to_latlon(self, sProj):
+        "Convert the already projected node coordinate array to lat/lon"
         import pyproj
 
         lla, myproj = self.setup_proj_objects(sProj)
-        print("projecting the node coordinates to geographic coords")
+        print("convert the node coordinates to lat/lon")
         self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
         print(self.vertex)
-        print("done projecting")
+        print("done converting")
 
     def scale_vertex(self, scale):
-        "convert vertex array to km"
-        for i in range(3):
-            self.vertex[:, i] = self.vertex[:, i] * scale[i]
+        "scale vertex array"
+        self.vertex = self.vertex * np.fill_diag(np.zeros((3, 3)), scale)
 
     def translate_vertex(self, translation):
-        "convert vertex array to km"
-        for i in range(3):
-            self.vertex[:, i] = self.vertex[:, i] + translation[i]
+        "translate vertex array"
+        self.vertex[:, :] = self.vertex[:, :] + translation[:]
 
     def compute_id_vertex(self):
-        "id_vertex is an array with the id of all vertex forming the face"
-        self.id_vertex = np.unique(self.connect.flatten()) + 1
+        "return an array with the id of all vertex forming the face"
+        return np.unique(self.connect.flatten()) + 1
 
     def intersect(self, Face2):
-        self.compute_id_vertex()
-        Face2.compute_id_vertex()
         "return the common nodes between self and Face2"
-        return np.intersect1d(self.id_vertex, Face2.id_vertex)
+        return np.intersect1d(self.compute_id_vertex(), Face2.compute_id_vertex())
 
     def reindex(self, vid_lookup):
         print("reindexing triangles...")
@@ -131,8 +125,7 @@ class Face:
         if write_full_vertex_array:
             vertex_id_2_write = range(1, len(vertex) + 1)
         else:
-            self.compute_id_vertex()
-            vertex_id_2_write = self.id_vertex
+            vertex_id_2_write = self.compute_id_vertex()
 
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
@@ -147,8 +140,8 @@ class Face:
     def __computeNormal(self, vertex):
         " compute efficiently the normals "
         normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :])
-        norm = np.apply_along_axis(np.linalg.norm, 1, normal)
-        self.normal = normal / norm.reshape((self.ntriangles, 1))
+        norm = np.linalg.norm(normal, axis=1)
+        self.normal = np.divide(normal, norm[:, None])
 
     def __writeStl(self, fname, vertex, append=False):
         self.__computeNormal(vertex)

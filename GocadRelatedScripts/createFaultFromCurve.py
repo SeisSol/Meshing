@@ -207,8 +207,6 @@ for i in range(0, nx):
     v0 = v0 / np.linalg.norm(v0)
     av0[i, :] = v0
     av1[i, :] = np.array([-v0[1], v0[0], 0])
-    if False:
-        print(i, atan2(v0[0], v0[1]) * 180.0 / pi, v0)
 
 # Create new vertex below 0
 depth = -np.arange(0, args.maxdepth[0], dx)
