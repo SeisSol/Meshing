@@ -37,8 +37,7 @@ def ParseInp(fname, bIsolate):
         line = lines[i]
         if line.startswith("*Element"):
             if bIsolate:
-                triangles = np.asarray(triangles)
-                myFace = Face(triangles)
+                myFace = Face(vertex=None, connect=np.asarray(triangles))
                 faces.append(myFace)
                 triangles = []
             continue
