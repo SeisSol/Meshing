@@ -39,7 +39,7 @@ else
 fi;
 
 for doc in ${documentation[@]}; do 
-  wget --user=${username} --password=${password} http://www.simmetrix.com/support_area/${fold}/${release}/documentation/${doc}
+  wget --user=${username} --password=${password} http://www.simmetrix.com/application/release/${fold}/${release}/documentation/${doc}
 done
 
 # run the command
@@ -53,6 +53,6 @@ else
 fi;
 
 for comp in ${components[@]}; do 
-  wget --user=${username} --password=${password} http://www.simmetrix.com/support_area/${fold}/${release}/release/${comp}
+  wget --user=${username} --password=${password} http://www.simmetrix.com/application/release/${fold}/${release}/release/${comp}
 done
 
