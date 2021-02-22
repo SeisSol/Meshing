@@ -92,7 +92,7 @@ class Face:
 
         lla, myproj = self.setup_proj_objects(sProj)
         print("convert the node coordinates to lat/lon")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(myproj, lla, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
         print(self.vertex)
         print("done converting")
 
