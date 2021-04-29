@@ -9,8 +9,6 @@ The program iterates over all faces with free surface boundary condition. For ea
 Compilation 
 -----
 
-
-when using with a hdf5 mesh:  
 ```
 mkdir build && cd build
 cmake ..
@@ -19,7 +17,10 @@ make
 
 Usage
 -----
+
+```
 place_receivers -d DEPTH -r RECEIVERS -m MESH -o OUTPUT
+```
 
 - DEPTH should be a positive number that specifies the amount of meters that the receiver shall be placed below the free surface.
 - RECEIVERS is the file name of a double column, space separated file where the first column denotes the x coordinate and the second column the y coordinate. For example:
