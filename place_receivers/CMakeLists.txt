@@ -5,8 +5,6 @@ project(place_receivers LANGUAGES C CXX)
 set(LOG_LEVEL "info" CACHE STRING "Log level for the code")
 set_property(CACHE LOG_LEVEL PROPERTY STRINGS "debug" "info" "warning" "error")
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -30,20 +28,17 @@ target_include_directories(place_receivers PUBLIC src
   "${CMAKE_CURRENT_SOURCE_DIR}/submodules/"
 )
 
-set(HDF5_PREFER_PARALLEL True)
+set(HDF5_PREFER_PARALLEL False)
 find_package(HDF5 REQUIRED COMPONENTS C HL)
 target_include_directories(place_receivers PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(place_receivers PUBLIC ${HDF5_C_HL_LIBRARIES} ${HDF5_C_LIBRARIES})
 target_compile_definitions(place_receivers PUBLIC USE_HDF)
 
-find_package(OpenMP REQUIRED)
-target_link_libraries(place_receivers PUBLIC OpenMP::OpenMP_CXX)
-
-find_package(MPI REQUIRED)
-target_link_libraries(place_receivers PUBLIC MPI::MPI_CXX)
-
-target_compile_definitions(place_receivers PUBLIC PARALLEL)
-
+if(HDF5_IS_PARALLEL)
+  find_package(MPI REQUIRED)
+  target_link_libraries(place_receivers PUBLIC MPI::MPI_CXX)
+  target_compile_definitions(place_receivers PUBLIC PARALLEL)
+endif()
 
 function(cast_log_level_to_int log_level_str log_level_int)
   if (${log_level_str} STREQUAL "debug")
