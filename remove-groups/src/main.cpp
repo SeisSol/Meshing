@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   std::cout << "Writing hdf5 file: " << outputFile << std::endl;
   writer.writeHdf5(outputFile);
   std::cout << "Writing xdmf file: " << xdmfFile << std::endl;
-  writer.writeXdmf(xdmfFile, "test.h5");
+  writer.writeXdmf(xdmfFile, outputFile);
 
   return 0;
 }
