@@ -3,7 +3,7 @@ from math import tan, pi, pow, cos, sin, atan2
 from scipy.interpolate import interp1d
 import os
 from datetime import datetime
-
+from scipy.interpolate import splprep, splev
 import argparse
 
 parser = argparse.ArgumentParser(description="create curved fault geometry from pl file")
@@ -17,7 +17,8 @@ parser.add_argument("--maxdepth", nargs=1, metavar=("maxdepth"), default=([20e3]
 parser.add_argument("--extend", nargs=1, metavar=("extend"), default=([00e3]), help="extend toward z= extend (positive)", type=float)
 parser.add_argument("--first_node_ext", nargs=1, default=([0.0]), help="extend along strike trace before the first node (arg: length in km)", type=float)
 parser.add_argument("--last_node_ext", nargs=1, default=([0.0]), help="extend along strike trace after the last node (arg: length in km)", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
+projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
 parser.add_argument("--smoothingParameter", nargs=1, metavar=("smoothingParameter"), default=([1e5]), help="smoothing parameter (the bigger the smoother)", type=float)
 parser.add_argument("--plotFaultTrace", dest="plotFaultTrace", action="store_true", default=False, help="plot resampled fault trace in matplotlib")
 args = parser.parse_args()
@@ -35,15 +36,10 @@ def smooth(y, box_hpts):
 
 def Project(nodes):
     print("Projecting the nodes coordinates")
-    import pyproj
-
-    lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    if args.proj[0] != "geocent":
-        sProj = args.proj[0]
-        myproj = pyproj.Proj(sProj)
-    else:
-        myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
-    nodes[:, 0], nodes[:, 1], nodes[:, 2] = pyproj.transform(lla, myproj, nodes[:, 0], nodes[:, 1], 1e3 * nodes[:, 2], radians=False)
+    # project the data to geocentric (lat, lon)
+    from pyproj import Transformer
+    transformer = Transformer.from_crs("epsg:4326", args.proj[0], always_xy=True)
+    nodes[:, 0], nodes[:, 1] = transformer.transform(nodes[:, 0], nodes[:, 1])
     return nodes
 
 
@@ -96,7 +92,7 @@ elif args.dipType == 2:
 else:
     raise ("dipType not in 0-2", args.dipType)
 
-if args.extrudeDir != None:
+if args.extrudeDir:
     print(f"strike direction used to extrude the fault trace, described by file {args.extrudeDir[0]}")
     strike_extrude = np.loadtxt(args.extrudeDir[0])
     relD = strike_extrude[:, 0]
@@ -125,7 +121,7 @@ else:
         b = np.zeros((nx, 1))
         nodes = np.append(nodes, b, axis=1)
 
-if args.proj != "":
+if args.proj:
     nodes = Project(nodes)
 
 if args.first_node_ext[0] > 0:
@@ -149,9 +145,9 @@ print("faultlength = %.2f km" % (faultlength / 1e3))
 nx = int(faultlength / dx)
 
 # smooth and resample fault trace
-from scipy.interpolate import splprep, splev
-
-tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]], s=args.smoothingParameter[0])
+nnodes = nodes.shape[0]
+spline_deg = 3 if nnodes > 3 else (2 if nnodes > 2 else 1)
+tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]], s=args.smoothingParameter[0], k=spline_deg)
 unew = np.linspace(0, 1, nx)
 new_points = splev(unew, tck)
 nNewNodes = np.shape(new_points[0])[0]
@@ -195,11 +191,8 @@ if args.dipType == 2:
 av0 = np.zeros((nx, 3))
 av1 = np.zeros((nx, 3))
 for i in range(0, nx):
-    if args.extrudeDir == None:
-        if i + 1 != nx:
-            v0 = nodes[i + 1, :] - nodes[i, :]
-        else:
-            v0 = nodes[i, :] - nodes[i - 1, :]
+    if not args.extrudeDir:
+        v0 = nodes[min(i + 1, nx-1), :] - nodes[max(i-1,0), :]
     else:
         strike = strike_extrude(reldist[i]) * pi / 180.0
         v0 = [-cos(strike), -sin(strike), 0.0]

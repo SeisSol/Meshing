@@ -1,12 +1,9 @@
 import numpy as np
 from netCDF4 import Dataset
-
-# Author: Thomas Ulrich, LMU
-# create surface from a structured grid of nodes
-
 import sys
 import argparse
 import os
+from Face import Face
 
 
 class Grid:
@@ -80,7 +77,7 @@ class Grid:
 
     def crop(self, argCrop):
         "crop the grid, by removing nodes out of the given latitude and longitude range"
-        if argCrop != None:
+        if argCrop:
             x0, x1, y0, y1 = argCrop
             print("crop the grid")
             print("only consider %e < lon < %e, %e < lat < %e" % (x0, x1, y0, y1))
@@ -103,16 +100,11 @@ class Grid:
 
     def proj_vertex(self, sProj):
         "project the node coordinate array"
-        import pyproj
+        from pyproj import Transformer
 
-        lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-        if args.proj[0] != "geocent":
-            myproj = pyproj.Proj(sProj)
-        else:
-            myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
-
+        transformer = Transformer.from_crs("epsg:4326", args.proj[0], always_xy=True)
         print("projecting the node coordinates")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
         print(self.vertex)
         print("done projecting")
 
@@ -180,9 +172,9 @@ class Grid:
         idv = np.linspace(0, nvertex - 1, nvertex, dtype=int)
         valid = ~np.isnan(self.vertex)[:, 2]
         # remove all entries with nan
-        self.vertex = self.vertex[valid == True, :]
+        self.vertex = self.vertex[valid, :]
         # id of valid entries
-        id_valid = idv[valid == True] + 1
+        id_valid = idv[valid] + 1
         nvalid = id_valid.shape[0]
         # Fill in vertex lookup array for reindexing
         self.vid_lookup = {}
@@ -194,7 +186,7 @@ class Grid:
         "solid_id=1 in the tagged region, 0 else"
         nconnect = self.connect.shape[0]
         self.solid_id = np.zeros(nconnect, dtype=int)
-        if argHole != None:
+        if argHole:
             x0, x1, y0, y1 = argHole
             print("tagging hole...")
             for k in range(nconnect):
@@ -212,16 +204,16 @@ class Grid:
             print("done tagging hole")
 
 
-from Face import Face
 
-parser = argparse.ArgumentParser(description="create surface from a GEBCO netcdf file")
-parser.add_argument("input_file", help="GEBCO netcdf file")
-parser.add_argument("output_file", help="gocad or stl output file")
+parser = argparse.ArgumentParser(description="create surface from a (possibly sparse, e.g. Slab2.0 dataset) structured dataset (e.g. netcdf)")
+parser.add_argument("input_file", help="netcdf file")
+parser.add_argument("output_file", help="output file (ext in stl, bstl, ts)")
 parser.add_argument("--subsample", nargs=1, type=int, metavar=("onesample_every"), default=[1], help="use only one value every onesample_every in both direction")
 parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
 parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
 parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
+ projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
 parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
 args = parser.parse_args()
 
@@ -237,7 +229,7 @@ structured_grid.generate_vertex()
 
 structured_grid.generate_connect()
 structured_grid.isolate_hole(args.hole)
-if args.proj != "":
+if args.proj:
     structured_grid.proj_vertex(args.proj[0])
 
 structured_grid.translate()
