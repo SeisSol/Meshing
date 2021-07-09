@@ -59,15 +59,17 @@ def generate_vertices(depth, sign=1):
     nd = depth.shape[0]
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
+    if args.dipType == 0:
+        # moved out of the loop: call to math.tan slow down significantly the code
+        one_over_tan_dip = 1.0 / tan(dip)
     for i in range(0, nx):
+        if args.dipType > 1:
+            one_over_tan_dip = 1.0 / tan(aDip[i])
         for j in range(1, nd):
-            if args.dipType == 0:
-                mydip = dip
-            elif args.dipType == 1:
+            if args.dipType == 1:
                 mydip = dipangle(depth[j] + vertices[i, 0, 2])
-            else:
-                mydip = aDip[i]
-            ud = -(1.0 / tan(mydip) * av1[i, :] - uz)
+                one_over_tan_dip = 1.0 / tan(mydip)
+            ud = -(one_over_tan_dip * av1[i, :] - uz)
             vertices[i, j, :] = vertices[i, j - 1, :] - sign * dx * ud
     return vertices
 
@@ -219,15 +221,16 @@ prefix = bn.split(".")[0]
 NX = nx
 NY = nd
 
-fout = open(prefix + "0.ts", "w")
-fout.write("GOCAD TSURF 1\nHEADER {\nname:" + prefix + "\n}\nTRIANGLES\n")
-for j in range(0, NY):
-    for i in range(0, NX):
-        fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
-for j in range(NY - 1):
-    for i in range(1, NX):
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX))
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
-fout.write("END")
+fname = prefix + "0.ts"
+with open(fname, "w") as fout:
+    fout.write("GOCAD TSURF 1\nHEADER {\nname:" + prefix + "\n}\nTRIANGLES\n")
+    for j in range(0, NY):
+        for i in range(0, NX):
+            fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
+    for j in range(NY - 1):
+        for i in range(1, NX):
+            fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX))
+            fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
+    fout.write("END")
+print(f"done writing {fname}")
 
-fout.close()
