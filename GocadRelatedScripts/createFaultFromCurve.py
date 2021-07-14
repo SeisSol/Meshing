@@ -6,20 +6,83 @@ from datetime import datetime
 
 import argparse
 
-parser = argparse.ArgumentParser(description="create curved fault geometry from pl file")
-parser.add_argument("filename", help="fault trace (*.pl) or ascii file (2 or 3 columns)")
-parser.add_argument("dipType", type=int, help="0: constant dip, 1: depth dependant dip, described by an ascii file, 2: dip variying along the length of the trace")
-parser.add_argument("dipDesc", help="dipType=0: dip value dipType=1 name of ascii file with 2 columns (depth, dip). dipType=2: idem with (relative length[0-1], dip)")
-parser.add_argument("--extrudeDir", nargs=1, metavar=("strike"), help="strike direction used to extrude the fault trace. Described by an ascii file: relative length[0-1] strike")
-parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
-parser.add_argument("--dd", nargs=1, metavar=("dd"), default=([1e3]), help="sampling along depth (m)", type=float)
-parser.add_argument("--maxdepth", nargs=1, metavar=("maxdepth"), default=([20e3]), help="max depth (positive) of fault (m)", type=float)
-parser.add_argument("--extend", nargs=1, metavar=("extend"), default=([00e3]), help="extend toward z= extend (positive)", type=float)
-parser.add_argument("--first_node_ext", nargs=1, default=([0.0]), help="extend along strike trace before the first node (arg: length in km)", type=float)
-parser.add_argument("--last_node_ext", nargs=1, default=([0.0]), help="extend along strike trace after the last node (arg: length in km)", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
-parser.add_argument("--smoothingParameter", nargs=1, metavar=("smoothingParameter"), default=([1e5]), help="smoothing parameter (the bigger the smoother)", type=float)
-parser.add_argument("--plotFaultTrace", dest="plotFaultTrace", action="store_true", default=False, help="plot resampled fault trace in matplotlib")
+parser = argparse.ArgumentParser(
+    description="create curved fault geometry from pl file")
+parser.add_argument("filename",
+                    help="fault trace (*.pl) or ascii file (2 or 3 columns)")
+parser.add_argument(
+    "dipType",
+    type=int,
+    help=
+    "0: constant dip, 1: depth dependant dip, described by an ascii file, 2: dip variying along the length of the trace"
+)
+parser.add_argument(
+    "dipDesc",
+    help=
+    "dipType=0: dip value dipType=1 name of ascii file with 2 columns (depth, dip). dipType=2: idem with (relative length[0-1], dip)"
+)
+parser.add_argument(
+    "--extrudeDir",
+    nargs=1,
+    metavar=("strike"),
+    help=
+    "strike direction used to extrude the fault trace. Described by an ascii file: relative length[0-1] strike"
+)
+parser.add_argument("--translate",
+                    nargs=2,
+                    metavar=("x0", "y0"),
+                    default=([0, 0]),
+                    help="translates all nodes by (x0,y0)",
+                    type=float)
+parser.add_argument("--dd",
+                    nargs=1,
+                    metavar=("dd"),
+                    default=([1e3]),
+                    help="sampling along depth (m)",
+                    type=float)
+parser.add_argument("--maxdepth",
+                    nargs=1,
+                    metavar=("maxdepth"),
+                    default=([20e3]),
+                    help="max depth (positive) of fault (m)",
+                    type=float)
+parser.add_argument("--extend",
+                    nargs=1,
+                    metavar=("extend"),
+                    default=([00e3]),
+                    help="extend toward z= extend (positive)",
+                    type=float)
+parser.add_argument(
+    "--first_node_ext",
+    nargs=1,
+    default=([0.0]),
+    help="extend along strike trace before the first node (arg: length in km)",
+    type=float)
+parser.add_argument(
+    "--last_node_ext",
+    nargs=1,
+    default=([0.0]),
+    help="extend along strike trace after the last node (arg: length in km)",
+    type=float)
+parser.add_argument(
+    "--proj",
+    nargs=1,
+    metavar=("projname"),
+    default=(""),
+    help=
+    "string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered"
+)
+parser.add_argument("--smoothingParameter",
+                    nargs=1,
+                    metavar=("smoothingParameter"),
+                    default=([1e5]),
+                    help="smoothing parameter (the bigger the smoother)",
+                    type=float)
+parser.add_argument("--plotFaultTrace",
+                    dest="plotFaultTrace",
+                    action="store_true",
+                    default=False,
+                    help="plot resampled fault trace in matplotlib")
 args = parser.parse_args()
 
 
@@ -43,13 +106,18 @@ def Project(nodes):
         myproj = pyproj.Proj(sProj)
     else:
         myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
-    nodes[:, 0], nodes[:, 1], nodes[:, 2] = pyproj.transform(lla, myproj, nodes[:, 0], nodes[:, 1], 1e3 * nodes[:, 2], radians=False)
+    nodes[:, 0], nodes[:, 1], nodes[:, 2] = pyproj.transform(lla,
+                                                             myproj,
+                                                             nodes[:, 0],
+                                                             nodes[:, 1],
+                                                             1e3 * nodes[:, 2],
+                                                             radians=False)
     return nodes
 
 
 def compute_rel_curvilinear_coordinate(nodes):
     # compute the relative curvilinear coordinate along strike
-    dist = np.linalg.norm(nodes[1:nx] - nodes[0 : nx - 1], axis=1)
+    dist = np.linalg.norm(nodes[1:nx] - nodes[0:nx - 1], axis=1)
     distall = np.sum(dist)
     reldist_seg = dist / distall
     reldist = np.zeros(nx)
@@ -82,13 +150,16 @@ dx = args.dd[0]
 if args.dipType == 0:
     dip = float(args.dipDesc) * pi / 180.0
 elif args.dipType == 1:
-    print("depth dependant dip described (depth vs dip) by the file %s" % (args.dipDesc))
+    print("depth dependant dip described (depth vs dip) by the file %s" %
+          (args.dipDesc))
     depthdip = np.loadtxt(args.dipDesc)
     deptha = depthdip[:, 0]
     dipa = depthdip[:, 1] * pi / 180.0
     dipangle = interp1d(deptha, dipa, kind="linear")
 elif args.dipType == 2:
-    print("along strike varying dip described (relative length along strike (0-1) vs dip) by file %s" % (args.dipDesc))
+    print(
+        "along strike varying dip described (relative length along strike (0-1) vs dip) by file %s"
+        % (args.dipDesc))
     curviligndip = np.loadtxt(args.dipDesc)
     relD = curviligndip[:, 0]
     dipa = curviligndip[:, 1] * pi / 180.0
@@ -97,7 +168,9 @@ else:
     raise ("dipType not in 0-2", args.dipType)
 
 if args.extrudeDir != None:
-    print(f"strike direction used to extrude the fault trace, described by file {args.extrudeDir[0]}")
+    print(
+        f"strike direction used to extrude the fault trace, described by file {args.extrudeDir[0]}"
+    )
     strike_extrude = np.loadtxt(args.extrudeDir[0])
     relD = strike_extrude[:, 0]
     aStrike = strike_extrude[:, 1]
@@ -138,7 +211,6 @@ if args.last_node_ext[0] > 0:
     u0 = u0 / np.linalg.norm(u0)
     nodes = np.vstack([nodes, nodes[-1, :] + u0 * args.last_node_ext[0]])
 
-
 nodes[:, 0] = nodes[:, 0] + args.translate[0]
 nodes[:, 1] = nodes[:, 1] + args.translate[1]
 
@@ -151,7 +223,8 @@ nx = int(faultlength / dx)
 # smooth and resample fault trace
 from scipy.interpolate import splprep, splev
 
-tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]], s=args.smoothingParameter[0])
+tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]],
+                 s=args.smoothingParameter[0])
 unew = np.linspace(0, 1, nx)
 new_points = splev(unew, tck)
 nNewNodes = np.shape(new_points[0])[0]
@@ -170,11 +243,12 @@ if args.plotFaultTrace:
     ax.plot(new_points[0], new_points[1], "rx-")
     plt.show()
 
-
 # Compute x,y abscisse coordinates of each nodes
 diff = nodes[1:, :] - nodes[0:-1, :]
 distBetweenNodes = np.sqrt(np.square(diff[:, 0]) + np.square(diff[:, 1]))
-print("distance between nodes: 15, 50 and 85 percentiles", np.percentile(distBetweenNodes, 15), np.percentile(distBetweenNodes, 50), np.percentile(distBetweenNodes, 85))
+print("distance between nodes: 15, 50 and 85 percentiles",
+      np.percentile(distBetweenNodes, 15), np.percentile(distBetweenNodes, 50),
+      np.percentile(distBetweenNodes, 85))
 
 xi = np.zeros((nNewNodes))
 for i in range(1, nNewNodes):
@@ -230,11 +304,14 @@ fout = open(prefix + "0.ts", "w")
 fout.write("GOCAD TSURF 1\nHEADER {\nname:" + prefix + "\n}\nTRIANGLES\n")
 for j in range(0, NY):
     for i in range(0, NX):
-        fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
+        fout.write("VRTX " + str(i + j * NX + 1) +
+                   " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
 for j in range(NY - 1):
     for i in range(1, NX):
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX))
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
+        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 +
+                                        (j + 1) * NX))
+        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i +
+                                        (j + 1) * NX))
 fout.write("END")
 
 fout.close()

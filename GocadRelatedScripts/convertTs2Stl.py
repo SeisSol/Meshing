@@ -4,14 +4,27 @@ import sys
 import os
 from Face import Face
 
-
 parser = argparse.ArgumentParser(description="convert ts file to stl")
 parser.add_argument("ts_file", help="ts filename")
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=None, help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
-parser.add_argument("--tokm", dest="tokm", action="store_true", help="convert coordinates to km")
-parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
+parser.add_argument(
+    "--proj",
+    nargs=1,
+    metavar=("projname"),
+    default=None,
+    help=
+    "string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered"
+)
+parser.add_argument("--tokm",
+                    dest="tokm",
+                    action="store_true",
+                    help="convert coordinates to km")
+parser.add_argument("--translate",
+                    nargs=2,
+                    metavar=("x0", "y0"),
+                    default=([0, 0]),
+                    help="translates all nodes by (x0,y0)",
+                    type=float)
 args = parser.parse_args()
-
 
 idface = 0
 basename, ext = os.path.splitext(args.ts_file)

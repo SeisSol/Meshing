@@ -2,7 +2,14 @@ import argparse
 
 parser = argparse.ArgumentParser(description="project ts file")
 parser.add_argument("ts_file", help="ts filename")
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument(
+    "--proj",
+    nargs=1,
+    metavar=("projname"),
+    default=(""),
+    help=
+    "string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered"
+)
 args = parser.parse_args()
 
 # set projection
@@ -26,8 +33,14 @@ fout = open(foutname, "w")
 for line in lines:
     if line.startswith("VRTX"):
         val = [float(val) for val in line.split()[1:5]]
-        xyz = pyproj.transform(lla, myproj, val[1], val[2], val[3] * 1e3, radians=False)
-        fout.write("VRTX " + str(int(val[0])) + " %.10e %.10e %.10e\n" % tuple(xyz))
+        xyz = pyproj.transform(lla,
+                               myproj,
+                               val[1],
+                               val[2],
+                               val[3] * 1e3,
+                               radians=False)
+        fout.write("VRTX " + str(int(val[0])) +
+                   " %.10e %.10e %.10e\n" % tuple(xyz))
     else:
         fout.write(line)
 fout.close()

@@ -44,7 +44,10 @@ class Grid:
             # using pandas rather than loadtxt because much faster
             import pandas as pd
 
-            self.z = pd.read_csv(fh, delimiter=" ", dtype=np.float64, header=None).values[:, :-1]
+            self.z = pd.read_csv(fh,
+                                 delimiter=" ",
+                                 dtype=np.float64,
+                                 header=None).values[:, :-1]
             self.x = self.x[0::downsample]
             self.y = self.y[0::downsample]
             self.z = self.z[0::downsample, 0::downsample]
@@ -83,7 +86,8 @@ class Grid:
         if argCrop != None:
             x0, x1, y0, y1 = argCrop
             print("crop the grid")
-            print("only consider %e < lon < %e, %e < lat < %e" % (x0, x1, y0, y1))
+            print("only consider %e < lon < %e, %e < lat < %e" %
+                  (x0, x1, y0, y1))
             lon_indices = np.logical_and(self.x > x0, self.x < x1)
             lat_indices = np.logical_and(self.y > y0, self.y < y1)
             self.x = self.x[lon_indices]
@@ -112,7 +116,15 @@ class Grid:
             myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
 
         print("projecting the node coordinates")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:,
+                                       1], self.vertex[:,
+                                                       2] = pyproj.transform(
+                                                           lla,
+                                                           myproj,
+                                                           self.vertex[:, 0],
+                                                           self.vertex[:, 1],
+                                                           self.vertex[:, 2],
+                                                           radians=False)
         print(self.vertex)
         print("done projecting")
 
@@ -135,14 +147,28 @@ class Grid:
         for j in range(self.ny - 1):
             for i in range(self.nx - 1):
                 # edge perpendicular to the max gradient
-                dz_diag1 = abs(self.vertex[i + j * self.nx, 2] - self.vertex[i + 1 + (j + 1) * self.nx, 2])
-                dz_diag2 = abs(self.vertex[i + (j + 1) * self.nx, 2] - self.vertex[i + 1 + j * self.nx, 2])
+                dz_diag1 = abs(self.vertex[i + j * self.nx, 2] -
+                               self.vertex[i + 1 + (j + 1) * self.nx, 2])
+                dz_diag2 = abs(self.vertex[i + (j + 1) * self.nx, 2] -
+                               self.vertex[i + 1 + j * self.nx, 2])
                 if dz_diag1 > dz_diag2:
-                    connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + (j + 1) * self.nx]
-                    connect[k + 1, :] = [i + 1 + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
+                    connect[k, :] = [
+                        i + j * self.nx, i + 1 + j * self.nx,
+                        i + (j + 1) * self.nx
+                    ]
+                    connect[k + 1, :] = [
+                        i + 1 + j * self.nx, i + (j + 1) * self.nx,
+                        i + 1 + (j + 1) * self.nx
+                    ]
                 else:
-                    connect[k, :] = [i + j * self.nx, i + 1 + j * self.nx, i + 1 + (j + 1) * self.nx]
-                    connect[k + 1, :] = [i + j * self.nx, i + (j + 1) * self.nx, i + 1 + (j + 1) * self.nx]
+                    connect[k, :] = [
+                        i + j * self.nx, i + 1 + j * self.nx,
+                        i + 1 + (j + 1) * self.nx
+                    ]
+                    connect[k + 1, :] = [
+                        i + j * self.nx, i + (j + 1) * self.nx,
+                        i + 1 + (j + 1) * self.nx
+                    ]
                 k = k + 2
         self.connect = connect
 
@@ -152,25 +178,67 @@ class Grid:
         triangles = []
         for j in range(self.ny - 1):
             for i in range(self.nx - 1):
-                if not np.any(np.isnan(self.z[j : j + 2, i : i + 2])):
+                if not np.any(np.isnan(self.z[j:j + 2, i:i + 2])):
                     "place the diagonal perpendicular to the max height gradient"
                     dz_diag1 = abs(self.z[j, i] - self.z[j + 1, i + 1])
                     dz_diag2 = abs(self.z[j + 1, i] - self.z[j, i + 1])
                     if dz_diag1 > dz_diag2:
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + (j + 1) * self.nx])
-                        triangles.append([1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + j * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
+                        triangles.append([
+                            1 + i + 1 + j * self.nx,
+                            1 + i + 1 + (j + 1) * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
                     else:
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx])
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + j * self.nx,
+                            1 + i + 1 + (j + 1) * self.nx
+                        ])
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
                 else:
-                    if not np.any(np.isnan([self.z[j, i], self.z[j, i + 1], self.z[j + 1, i + 1]])):
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx])
-                    elif not np.any(np.isnan([self.z[j, i], self.z[j + 1, i + 1], self.z[j + 1, i]])):
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
-                    elif not np.any(np.isnan([self.z[j, i], self.z[j, i + 1], self.z[j + 1, i]])):
-                        triangles.append([1 + i + j * self.nx, 1 + i + 1 + j * self.nx, 1 + i + (j + 1) * self.nx])
-                    elif not np.any(np.isnan([self.z[j, i + 1], self.z[j + 1, i + 1], self.z[j + 1, i]])):
-                        triangles.append([1 + i + 1 + j * self.nx, 1 + i + 1 + (j + 1) * self.nx, 1 + i + (j + 1) * self.nx])
+                    if not np.any(
+                            np.isnan([
+                                self.z[j, i], self.z[j, i + 1], self.z[j + 1,
+                                                                       i + 1]
+                            ])):
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + j * self.nx,
+                            1 + i + 1 + (j + 1) * self.nx
+                        ])
+                    elif not np.any(
+                            np.isnan([
+                                self.z[j, i], self.z[j + 1, i + 1],
+                                self.z[j + 1, i]
+                            ])):
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + (j + 1) * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
+                    elif not np.any(
+                            np.isnan([
+                                self.z[j, i], self.z[j, i + 1], self.z[j + 1,
+                                                                       i]
+                            ])):
+                        triangles.append([
+                            1 + i + j * self.nx, 1 + i + 1 + j * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
+                    elif not np.any(
+                            np.isnan([
+                                self.z[j, i + 1], self.z[j + 1, i + 1],
+                                self.z[j + 1, i]
+                            ])):
+                        triangles.append([
+                            1 + i + 1 + j * self.nx,
+                            1 + i + 1 + (j + 1) * self.nx,
+                            1 + i + (j + 1) * self.nx
+                        ])
         self.connect = np.array(triangles)
         self.remove_nan_generate_vid_lookup()
 
@@ -214,15 +282,48 @@ class Grid:
 
 from Face import Face
 
-parser = argparse.ArgumentParser(description="create surface from a GEBCO netcdf file")
+parser = argparse.ArgumentParser(
+    description="create surface from a GEBCO netcdf file")
 parser.add_argument("input_file", help="GEBCO netcdf file")
 parser.add_argument("output_file", help="gocad or stl output file")
-parser.add_argument("--subsample", nargs=1, type=int, metavar=("onesample_every"), default=[1], help="use only one value every onesample_every in both direction")
-parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
-parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
-parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
-parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
+parser.add_argument(
+    "--subsample",
+    nargs=1,
+    type=int,
+    metavar=("onesample_every"),
+    default=[1],
+    help="use only one value every onesample_every in both direction")
+parser.add_argument("--objectname",
+                    nargs=1,
+                    metavar=("objectname"),
+                    default=(""),
+                    help="name of the surface in gocad")
+parser.add_argument(
+    "--hole",
+    nargs=4,
+    metavar=(("x0"), ("x1"), ("y0"), ("y1")),
+    help=
+    "isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)",
+    type=float)
+parser.add_argument("--crop",
+                    nargs=4,
+                    metavar=(("x0"), ("x1"), ("y0"), ("y1")),
+                    help="select only surfaces in x0<=x<=x1 and y0<=y<=y1",
+                    type=float)
+parser.add_argument(
+    "--proj",
+    nargs=1,
+    metavar=("projname"),
+    default=(""),
+    help=
+    "string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered"
+)
+parser.add_argument("--translate",
+                    nargs=2,
+                    metavar=("x0", "y0"),
+                    default=([0, 0]),
+                    help="translates all nodes by (x0,y0)",
+                    type=float)
 args = parser.parse_args()
 
 if args.objectname == "":
@@ -245,7 +346,6 @@ structured_grid.translate()
 basename, ext = os.path.splitext(args.output_file)
 nsolid = max(structured_grid.solid_id) + 1
 
-
 if nsolid == 1:
     myFace = Face(structured_grid.vertex, structured_grid.connect)
     if structured_grid.is_sparse:
@@ -258,4 +358,6 @@ else:
         myFace = Face(vertex=None, connect=structured_grid.connect[idtr, :])
         if structured_grid.is_sparse:
             myFace.reindex(structured_grid.vid_lookup)
-        myFace.write(f"{basename}{sid}{ext}", structured_grid.vertex, write_full_vertex_array=False)
+        myFace.write(f"{basename}{sid}{ext}",
+                     structured_grid.vertex,
+                     write_full_vertex_array=False)

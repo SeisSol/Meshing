@@ -21,15 +21,29 @@ import numpy as np
 import argparse
 import os
 
-parser = argparse.ArgumentParser(description="create surface from a structured grid of nodes")
+parser = argparse.ArgumentParser(
+    description="create surface from a structured grid of nodes")
 parser.add_argument("input_file", help="x y z, one node coordinate by line")
 parser.add_argument("output_file", help="gocad output file")
-parser.add_argument("--axis", nargs=1, metavar=("axis"), default=("0"), help="0: triangles between lats 1:lon")
-parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
-parser.add_argument("--large_precision", dest="large_precision", action="store_true", help="write vertex using \%25.20f")
-parser.add_argument("--append", dest="append", action="store_true", help="append to output_file")
+parser.add_argument("--axis",
+                    nargs=1,
+                    metavar=("axis"),
+                    default=("0"),
+                    help="0: triangles between lats 1:lon")
+parser.add_argument("--objectname",
+                    nargs=1,
+                    metavar=("objectname"),
+                    default=(""),
+                    help="name of the surface in gocad")
+parser.add_argument("--large_precision",
+                    dest="large_precision",
+                    action="store_true",
+                    help="write vertex using \%25.20f")
+parser.add_argument("--append",
+                    dest="append",
+                    action="store_true",
+                    help="append to output_file")
 args = parser.parse_args()
-
 
 if args.objectname == "":
     base = os.path.basename(args.input_file)
@@ -75,16 +89,18 @@ if args.append:
     fout = open(args.output_file, "a")
 else:
     fout = open(args.output_file, "w")
-fout.write("GOCAD TSURF 1\nHEADER {\nname:" + args.objectname + "\n}\nTRIANGLES\n")
+fout.write("GOCAD TSURF 1\nHEADER {\nname:" + args.objectname +
+           "\n}\nTRIANGLES\n")
 
 for i in range(0, nvertex):
     if args.large_precision:
-        fout.write("VRTX %d %25.20f %25.20f %25.20f\n" % (i + 1, dataxyz[i, 0], dataxyz[i, 1], dataxyz[i, 2]))
+        fout.write("VRTX %d %25.20f %25.20f %25.20f\n" %
+                   (i + 1, dataxyz[i, 0], dataxyz[i, 1], dataxyz[i, 2]))
     else:
-        fout.write("VRTX %d %f %f %f\n" % (i + 1, dataxyz[i, 0], dataxyz[i, 1], dataxyz[i, 2]))
+        fout.write("VRTX %d %f %f %f\n" %
+                   (i + 1, dataxyz[i, 0], dataxyz[i, 1], dataxyz[i, 2]))
 
 for tr in triangles:
     fout.write("TRGL %d %d %d\n" % (tr[0] + 1, tr[1] + 1, tr[2] + 1))
-
 
 fout.write("END\n")

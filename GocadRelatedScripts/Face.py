@@ -82,7 +82,15 @@ class Face:
 
         lla, myproj = self.setup_proj_objects(sProj)
         print("projecting the node coordinates")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:,
+                                       1], self.vertex[:,
+                                                       2] = pyproj.transform(
+                                                           lla,
+                                                           myproj,
+                                                           self.vertex[:, 0],
+                                                           self.vertex[:, 1],
+                                                           self.vertex[:, 2],
+                                                           radians=False)
         print(self.vertex)
         print("done projecting")
 
@@ -92,7 +100,15 @@ class Face:
 
         lla, myproj = self.setup_proj_objects(sProj)
         print("convert the node coordinates to lat/lon")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(myproj, lla, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:,
+                                       1], self.vertex[:,
+                                                       2] = pyproj.transform(
+                                                           myproj,
+                                                           lla,
+                                                           self.vertex[:, 0],
+                                                           self.vertex[:, 1],
+                                                           self.vertex[:, 2],
+                                                           radians=False)
         print(self.vertex)
         print("done converting")
 
@@ -110,7 +126,8 @@ class Face:
 
     def intersect(self, Face2):
         "return the common nodes between self and Face2"
-        return np.intersect1d(self.compute_id_vertex(), Face2.compute_id_vertex())
+        return np.intersect1d(self.compute_id_vertex(),
+                              Face2.compute_id_vertex())
 
     def reindex(self, vid_lookup):
         print("reindexing triangles...")
@@ -118,7 +135,11 @@ class Face:
             for iv in range(3):
                 self.connect[itr, iv] = vid_lookup[self.connect[itr, iv]]
 
-    def __writeTs(self, fname, vertex, write_full_vertex_array=True, append=False):
+    def __writeTs(self,
+                  fname,
+                  vertex,
+                  write_full_vertex_array=True,
+                  append=False):
         """ output face as a *.ts file
              vertex: nodes coordinates array
         """
@@ -129,17 +150,25 @@ class Face:
 
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
-            fout.write("GOCAD TSURF 1\nHEADER {\nname:%s\nborder: true\nmesh: false\n*border*bstone: true\n}\nTFACE\n" % (fname))
+            fout.write(
+                "GOCAD TSURF 1\nHEADER {\nname:%s\nborder: true\nmesh: false\n*border*bstone: true\n}\nTFACE\n"
+                % (fname))
             for ivx in vertex_id_2_write:
-                fout.write("VRTX %s %s %s %s\n" % (ivx, vertex[ivx - 1, 0], vertex[ivx - 1, 1], vertex[ivx - 1, 2]))
+                fout.write("VRTX %s %s %s %s\n" %
+                           (ivx, vertex[ivx - 1, 0], vertex[ivx - 1, 1],
+                            vertex[ivx - 1, 2]))
 
             for i in range(self.ntriangles):
-                fout.write("TRGL %d %d %d\n" % (self.connect[i, 0] + 1, self.connect[i, 1] + 1, self.connect[i, 2] + 1))
+                fout.write("TRGL %d %d %d\n" %
+                           (self.connect[i, 0] + 1, self.connect[i, 1] + 1,
+                            self.connect[i, 2] + 1))
             fout.write("END\n")
 
     def __computeNormal(self, vertex):
         " compute efficiently the normals "
-        normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :])
+        normal = np.cross(
+            vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :],
+            vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :])
         norm = np.linalg.norm(normal, axis=1)
         self.normal = np.divide(normal, norm[:, None])
 
@@ -149,10 +178,12 @@ class Face:
         with open(fname, mode) as fout:
             fout.write(f"solid {fname}\n")
             for k in range(self.ntriangles):
-                fout.write("facet normal %e %e %e\n" % tuple(self.normal[k, :]))
+                fout.write("facet normal %e %e %e\n" %
+                           tuple(self.normal[k, :]))
                 fout.write("outer loop\n")
                 for i in range(0, 3):
-                    fout.write("vertex %.10e %.10e %.10e\n" % tuple(vertex[self.connect[k, i], :]))
+                    fout.write("vertex %.10e %.10e %.10e\n" %
+                               tuple(vertex[self.connect[k, i], :]))
                 fout.write("endloop\n")
                 fout.write("endfacet\n")
             fout.write(f"endsolid {fname}\n")
@@ -170,7 +201,11 @@ class Face:
                 fout.write(struct.pack("<3f", *vertex[self.connect[k, i], :]))
             fout.write(struct.pack("<H", 0))
 
-    def write(self, fname, vertex=np.empty(0), write_full_vertex_array=True, append=False):
+    def write(self,
+              fname,
+              vertex=np.empty(0),
+              write_full_vertex_array=True,
+              append=False):
         import os
 
         if vertex.shape[0] == 0:

@@ -42,6 +42,6 @@ Import('env')
 
 sourceFiles = ['main.cpp']
 for f in sourceFiles:
-	env.sourceFiles.append(env.Object(f))
+    env.sourceFiles.append(env.Object(f))
 
 Export('env')

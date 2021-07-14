@@ -53,12 +53,21 @@ def ParseInp(fname, bIsolate):
     return vertex, faces
 
 
-parser = argparse.ArgumentParser(description="convert inp (from SimModeler5 2d mesh (ABAQUS 2D)) to ts (Gocad), stl or bstl")
-parser.add_argument("inp_filename", help="inp filename (SimModeler5 2d mesh (ABAQUS 2D))")
-parser.add_argument("output_filename", nargs="?", help="output filname (if not used = inpbasename.ts)", default="")
-parser.add_argument("--isolate", dest="isolate", action="store_true", help="isolate every surface in a different ts file")
+parser = argparse.ArgumentParser(
+    description=
+    "convert inp (from SimModeler5 2d mesh (ABAQUS 2D)) to ts (Gocad), stl or bstl"
+)
+parser.add_argument("inp_filename",
+                    help="inp filename (SimModeler5 2d mesh (ABAQUS 2D))")
+parser.add_argument("output_filename",
+                    nargs="?",
+                    help="output filname (if not used = inpbasename.ts)",
+                    default="")
+parser.add_argument("--isolate",
+                    dest="isolate",
+                    action="store_true",
+                    help="isolate every surface in a different ts file")
 args = parser.parse_args()
-
 
 if args.output_filename == "":
     args.output_filename = args.inp_filename[0:-4] + ".ts"
