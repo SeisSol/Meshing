@@ -3,7 +3,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="create surface from a structured grid of nodes.\
- vertices in a raw or a column do not necessary share the same x and y values (non rectilinear grid)")
+ vertices in a row or a column do not necessary share the same x and y values (non rectilinear grid)")
 parser.add_argument("input_file", help="x y z, one node coordinate by line")
 parser.add_argument("output_file", help="gocad output file")
 parser.add_argument("--NX", nargs=1, metavar=("NX"), help="NX: number of nodes in the first structured dimension")
