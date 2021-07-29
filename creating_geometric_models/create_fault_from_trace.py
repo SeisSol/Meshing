@@ -5,6 +5,14 @@ import os
 from datetime import datetime
 from scipy.interpolate import splprep, splev
 import argparse
+from enum import IntEnum
+
+class dipType(IntEnum):
+    CONSTANT = 0
+    DEPTH_DEPENDENT = 1
+    STRIKE_DEPENDENT = 2
+
+
 
 parser = argparse.ArgumentParser(description="create curved fault geometry from pl file")
 parser.add_argument("filename", help="fault trace (*.pl) or ascii file (2 or 3 columns)")
@@ -59,14 +67,14 @@ def generate_vertices(depth, sign=1):
     nd = depth.shape[0]
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
-    if args.dipType == 0:
+    if args.dipType == dipType.CONSTANT:
         # moved out of the loop: call to math.tan slow down significantly the code
         one_over_tan_dip = 1.0 / tan(dip)
     for i in range(0, nx):
-        if args.dipType > 1:
+        if args.dipType == dipType.STRIKE_DEPENDENT:
             one_over_tan_dip = 1.0 / tan(aDip[i])
         for j in range(1, nd):
-            if args.dipType == 1:
+            if args.dipType == dipType.DEPTH_DEPENDENT:
                 mydip = dipangle(depth[j] + vertices[i, 0, 2])
                 one_over_tan_dip = 1.0 / tan(mydip)
             ud = -(one_over_tan_dip * av1[i, :] - uz)
@@ -77,22 +85,22 @@ def generate_vertices(depth, sign=1):
 dx = args.dd[0]
 
 # Reading dip value
-if args.dipType == 0:
+if args.dipType == dipType.CONSTANT:
     dip = float(args.dipDesc) * pi / 180.0
-elif args.dipType == 1:
+elif args.dipType == dipType.DEPTH_DEPENDENT:
     print("depth dependant dip described (depth vs dip) by the file %s" % (args.dipDesc))
     depthdip = np.loadtxt(args.dipDesc)
     deptha = depthdip[:, 0]
     dipa = depthdip[:, 1] * pi / 180.0
     dipangle = interp1d(deptha, dipa, kind="linear")
-elif args.dipType == 2:
+elif args.dipType == dipType.STRIKE_DEPENDENT:
     print("along strike varying dip described (relative length along strike (0-1) vs dip) by file %s" % (args.dipDesc))
     curviligndip = np.loadtxt(args.dipDesc)
     relD = curviligndip[:, 0]
     dipa = curviligndip[:, 1] * pi / 180.0
     dipangle = interp1d(relD, dipa, kind="linear")
 else:
-    raise ("dipType not in 0-2", args.dipType)
+    raise ValueError("dipType not in 0-2", args.dipType)
 
 if args.extrudeDir:
     print(f"strike direction used to extrude the fault trace, described by file {args.extrudeDir[0]}")
@@ -181,10 +189,10 @@ for i in range(1, nNewNodes):
 nx = np.shape(nodes)[0]
 uz = np.array([0, 0, 1])
 
-if args.dipType == 2 or args.extrudeDir:
+if args.dipType == dipType.STRIKE_DEPENDENT or args.extrudeDir:
     reldist = compute_rel_curvilinear_coordinate(nodes)
 
-if args.dipType == 2:
+if args.dipType == dipType.STRIKE_DEPENDENT:
     # apply smoothing kernel to avoid sharp normal changes
     aDip = smooth(dipangle(reldist), box_hpts=2)
 
