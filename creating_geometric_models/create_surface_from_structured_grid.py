@@ -1,33 +1,21 @@
 import numpy as np
-
-# Author: Thomas Ulrich, LMU
-# (inspired from a script by J. Klicpera)
-# create surface from a structured grid of nodes
-
-# Mesh example:
-
-# 3 - 3
-#  /
-# 2 - 2
-#  /
-# 1 - 1
-
-# parsing python arguments
 import argparse
 import os
 
-parser = argparse.ArgumentParser(description="create surface from a structured grid of nodes")
+parser = argparse.ArgumentParser(description="create surface from a structured grid of nodes.\
+ vertices in a row or a column do not necessary share the same x and y values (non rectilinear grid)")
 parser.add_argument("input_file", help="x y z, one node coordinate by line")
 parser.add_argument("output_file", help="gocad output file")
-parser.add_argument("--NX", nargs=1, metavar=("NX"), default=(""), help="NX: number of nodes in the first structured dimension")
-parser.add_argument("--subsample", nargs=1, metavar=("onesample_every"), default=(""), help="use only one value every onesample_every in both direction")
-parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
-parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), default=(""), help="create a hole in surface defined by x0<=x<=x1 and y0<=y<=y1")
-parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), default=(""), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1")
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument("--NX", nargs=1, metavar=("NX"), help="NX: number of nodes in the first structured dimension")
+parser.add_argument("--subsample", nargs=1, metavar=("onesample_every"), help="use only one value every onesample_every in both direction")
+parser.add_argument("--objectname", nargs=1, metavar=("objectname"), help="name of the surface in gocad")
+parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="create a hole in surface defined by x0<=x<=x1 and y0<=y<=y1")
+parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1")
+parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
+ projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
 args = parser.parse_args()
 
-if args.objectname == "":
+if not args.objectname:
     base = os.path.basename(args.input_file)
     args.objectname = os.path.splitext(base)[0]
 else:
@@ -36,25 +24,17 @@ else:
 dataxyz = np.loadtxt(args.input_file)
 nvertex = np.shape(dataxyz)[0]
 
-if args.crop != "":
-    if args.NX != "":
+if args.crop:
+    if args.NX:
         print("uncompatible inputs")
         exit()
     print("croping the surface")
-    x0c = float(args.crop[0])
-    x1c = float(args.crop[1])
-    y0c = float(args.crop[2])
-    y1c = float(args.crop[3])
+    x0c, x1c, y0c, y1c  = [float(val) for val in args.crop]
     indexes = np.where((dataxyz[:, 0] >= x0c) & (dataxyz[:, 0] <= x1c) & (dataxyz[:, 1] >= y0c) & (dataxyz[:, 1] <= y1c))
     dataxyz = dataxyz[indexes[0], :]
     nvertex = np.shape(dataxyz)[0]
-    # print test
-    # indexes = np.where((test >= x0c))
-    # & (dataxyz(:,1) >= y0) & (dataxyz(:,1) <= y1))
-    # print indexes
 
-
-if args.NX == "":
+if not args.NX:
     print("NX not defined: trying to guess it...")
     rowdiff = dataxyz[1, :] - dataxyz[0, :]
     ix = -1
@@ -102,15 +82,12 @@ else:
     assert nvertex % NX == 0, "nvertex%%NX!=0 nvertex/NX = %f" % (float(nvertex) / NX)
     NY = int(nvertex / NX)
 
-if args.hole != "":
+if args.hole:
     print("a hole will be left in the surface")
-    x0hole = float(args.hole[0])
-    x1hole = float(args.hole[1])
-    y0hole = float(args.hole[2])
-    y1hole = float(args.hole[3])
+    x0hole, x1hole, y0hole, y1hole  = [float(val) for val in args.hole]
     print("hole coordinates %f %f %f %f" % (x0hole, x1hole, y0hole, y1hole))
 
-if args.subsample != "":
+if args.subsample:
     onesample_every = int(args.subsample[0])
     print("subsampling : 1/%d" % onesample_every)
 else:
@@ -129,7 +106,7 @@ nvertex = NX * NY
 for j in range(NY - 1):
     for i in range(1, NX):
         write_triangle = True
-        if args.hole != "":
+        if args.hole:
             for ij in [[i - 1, j - 1], [i - 1, j], [i, j - 1], [i, j]]:
                 if ((dataxyz[ij[0], ij[1], 0] > x0hole) & (dataxyz[ij[0], ij[1], 0] < x1hole)) & ((dataxyz[ij[0], ij[1], 1] > y0hole) & (dataxyz[ij[0], ij[1], 1] < y1hole)):
                     write_triangle = False
@@ -137,16 +114,10 @@ for j in range(NY - 1):
             triangles.append([i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX])
             triangles.append([i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX])
 
-if args.proj != "":
+if args.proj:
     print("Projecting the nodes coordinates")
-    import pyproj
-
-    lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    if args.proj[0] != "geocent":
-        sProj = args.proj[0]
-        myproj = pyproj.Proj(sProj)
-    else:
-        myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
+    from pyproj import Transformer
+    transformer = Transformer.from_crs("epsg:4326", args.proj[0], always_xy=True)
 else:
     print("no projection carried out")
 
@@ -156,13 +127,13 @@ fout = open(args.output_file, "w")
 fout.write("GOCAD TSURF 1\nHEADER {\nname:" + args.objectname + "\n}\nTRIANGLES\n")
 for j in range(0, NY):
     for i in range(0, NX):
-        if args.proj != "":
-            xyz = pyproj.transform(lla, myproj, dataxyz[i, j, 0], dataxyz[i, j, 1], 1e3 * dataxyz[i, j, 2], radians=False)
-            fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(xyz))
+        if args.proj:
+            xyz = transformer.transform(dataxyz[i, j, 0], dataxyz[i, j, 1])
+            fout.write(f"VRTX {i + j * NX + 1} {xyz[0]:.10e} %{xyz[1]:.10e} {dataxyz[i, j, 2]:.10e}\n")
         else:
             fout.write("VRTX %d %f %f %f\n" % (i + j * NX + 1, dataxyz[i, j, 0], dataxyz[i, j, 1], dataxyz[i, j, 2]))
 for tr in triangles:
-    fout.write("TRGL %d %d %d\n" % (tr[0], tr[1], tr[2]))
+    fout.write(f"TRGL {tr[0]} {tr[1]} {tr[2]}\n")
 fout.write("END")
 
 fout.close()

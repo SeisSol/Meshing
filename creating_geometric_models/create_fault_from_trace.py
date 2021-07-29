@@ -3,8 +3,16 @@ from math import tan, pi, pow, cos, sin, atan2
 from scipy.interpolate import interp1d
 import os
 from datetime import datetime
-
+from scipy.interpolate import splprep, splev
 import argparse
+from enum import IntEnum
+
+class dipType(IntEnum):
+    CONSTANT = 0
+    DEPTH_DEPENDENT = 1
+    STRIKE_DEPENDENT = 2
+
+
 
 parser = argparse.ArgumentParser(description="create curved fault geometry from pl file")
 parser.add_argument("filename", help="fault trace (*.pl) or ascii file (2 or 3 columns)")
@@ -17,7 +25,8 @@ parser.add_argument("--maxdepth", nargs=1, metavar=("maxdepth"), default=([20e3]
 parser.add_argument("--extend", nargs=1, metavar=("extend"), default=([00e3]), help="extend toward z= extend (positive)", type=float)
 parser.add_argument("--first_node_ext", nargs=1, default=([0.0]), help="extend along strike trace before the first node (arg: length in km)", type=float)
 parser.add_argument("--last_node_ext", nargs=1, default=([0.0]), help="extend along strike trace after the last node (arg: length in km)", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), default=(""), help="string describing its projection (ex: +init=EPSG:32646 (UTM46N), or geocent (cartesian global)) if a projection is considered")
+parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
+projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
 parser.add_argument("--smoothingParameter", nargs=1, metavar=("smoothingParameter"), default=([1e5]), help="smoothing parameter (the bigger the smoother)", type=float)
 parser.add_argument("--plotFaultTrace", dest="plotFaultTrace", action="store_true", default=False, help="plot resampled fault trace in matplotlib")
 args = parser.parse_args()
@@ -35,15 +44,10 @@ def smooth(y, box_hpts):
 
 def Project(nodes):
     print("Projecting the nodes coordinates")
-    import pyproj
-
-    lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    if args.proj[0] != "geocent":
-        sProj = args.proj[0]
-        myproj = pyproj.Proj(sProj)
-    else:
-        myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
-    nodes[:, 0], nodes[:, 1], nodes[:, 2] = pyproj.transform(lla, myproj, nodes[:, 0], nodes[:, 1], 1e3 * nodes[:, 2], radians=False)
+    # project the data to geocentric (lat, lon)
+    from pyproj import Transformer
+    transformer = Transformer.from_crs("epsg:4326", args.proj[0], always_xy=True)
+    nodes[:, 0], nodes[:, 1] = transformer.transform(nodes[:, 0], nodes[:, 1])
     return nodes
 
 
@@ -63,15 +67,17 @@ def generate_vertices(depth, sign=1):
     nd = depth.shape[0]
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
+    if args.dipType == dipType.CONSTANT:
+        # moved out of the loop: call to math.tan slow down significantly the code
+        one_over_tan_dip = 1.0 / tan(dip)
     for i in range(0, nx):
+        if args.dipType == dipType.STRIKE_DEPENDENT:
+            one_over_tan_dip = 1.0 / tan(aDip[i])
         for j in range(1, nd):
-            if args.dipType == 0:
-                mydip = dip
-            elif args.dipType == 1:
+            if args.dipType == dipType.DEPTH_DEPENDENT:
                 mydip = dipangle(depth[j] + vertices[i, 0, 2])
-            else:
-                mydip = aDip[i]
-            ud = -(1.0 / tan(mydip) * av1[i, :] - uz)
+                one_over_tan_dip = 1.0 / tan(mydip)
+            ud = -(one_over_tan_dip * av1[i, :] - uz)
             vertices[i, j, :] = vertices[i, j - 1, :] - sign * dx * ud
     return vertices
 
@@ -79,24 +85,24 @@ def generate_vertices(depth, sign=1):
 dx = args.dd[0]
 
 # Reading dip value
-if args.dipType == 0:
+if args.dipType == dipType.CONSTANT:
     dip = float(args.dipDesc) * pi / 180.0
-elif args.dipType == 1:
+elif args.dipType == dipType.DEPTH_DEPENDENT:
     print("depth dependant dip described (depth vs dip) by the file %s" % (args.dipDesc))
     depthdip = np.loadtxt(args.dipDesc)
     deptha = depthdip[:, 0]
     dipa = depthdip[:, 1] * pi / 180.0
     dipangle = interp1d(deptha, dipa, kind="linear")
-elif args.dipType == 2:
+elif args.dipType == dipType.STRIKE_DEPENDENT:
     print("along strike varying dip described (relative length along strike (0-1) vs dip) by file %s" % (args.dipDesc))
     curviligndip = np.loadtxt(args.dipDesc)
     relD = curviligndip[:, 0]
     dipa = curviligndip[:, 1] * pi / 180.0
     dipangle = interp1d(relD, dipa, kind="linear")
 else:
-    raise ("dipType not in 0-2", args.dipType)
+    raise ValueError("dipType not in 0-2", args.dipType)
 
-if args.extrudeDir != None:
+if args.extrudeDir:
     print(f"strike direction used to extrude the fault trace, described by file {args.extrudeDir[0]}")
     strike_extrude = np.loadtxt(args.extrudeDir[0])
     relD = strike_extrude[:, 0]
@@ -125,7 +131,7 @@ else:
         b = np.zeros((nx, 1))
         nodes = np.append(nodes, b, axis=1)
 
-if args.proj != "":
+if args.proj:
     nodes = Project(nodes)
 
 if args.first_node_ext[0] > 0:
@@ -149,9 +155,9 @@ print("faultlength = %.2f km" % (faultlength / 1e3))
 nx = int(faultlength / dx)
 
 # smooth and resample fault trace
-from scipy.interpolate import splprep, splev
-
-tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]], s=args.smoothingParameter[0])
+nnodes = nodes.shape[0]
+spline_deg = 3 if nnodes > 3 else (2 if nnodes > 2 else 1)
+tck, u = splprep([nodes[:, 0], nodes[:, 1], nodes[:, 2]], s=args.smoothingParameter[0], k=spline_deg)
 unew = np.linspace(0, 1, nx)
 new_points = splev(unew, tck)
 nNewNodes = np.shape(new_points[0])[0]
@@ -183,10 +189,10 @@ for i in range(1, nNewNodes):
 nx = np.shape(nodes)[0]
 uz = np.array([0, 0, 1])
 
-if args.dipType == 2 or args.extrudeDir:
+if args.dipType == dipType.STRIKE_DEPENDENT or args.extrudeDir:
     reldist = compute_rel_curvilinear_coordinate(nodes)
 
-if args.dipType == 2:
+if args.dipType == dipType.STRIKE_DEPENDENT:
     # apply smoothing kernel to avoid sharp normal changes
     aDip = smooth(dipangle(reldist), box_hpts=2)
 
@@ -195,11 +201,8 @@ if args.dipType == 2:
 av0 = np.zeros((nx, 3))
 av1 = np.zeros((nx, 3))
 for i in range(0, nx):
-    if args.extrudeDir == None:
-        if i + 1 != nx:
-            v0 = nodes[i + 1, :] - nodes[i, :]
-        else:
-            v0 = nodes[i, :] - nodes[i - 1, :]
+    if not args.extrudeDir:
+        v0 = nodes[min(i + 1, nx-1), :] - nodes[max(i-1,0), :]
     else:
         strike = strike_extrude(reldist[i]) * pi / 180.0
         v0 = [-cos(strike), -sin(strike), 0.0]
@@ -226,15 +229,16 @@ prefix = bn.split(".")[0]
 NX = nx
 NY = nd
 
-fout = open(prefix + "0.ts", "w")
-fout.write("GOCAD TSURF 1\nHEADER {\nname:" + prefix + "\n}\nTRIANGLES\n")
-for j in range(0, NY):
-    for i in range(0, NX):
-        fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
-for j in range(NY - 1):
-    for i in range(1, NX):
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX))
-        fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
-fout.write("END")
+fname = prefix + "0.ts"
+with open(fname, "w") as fout:
+    fout.write("GOCAD TSURF 1\nHEADER {\nname:" + prefix + "\n}\nTRIANGLES\n")
+    for j in range(0, NY):
+        for i in range(0, NX):
+            fout.write("VRTX " + str(i + j * NX + 1) + " %.10e %.10e %.10e\n" % tuple(vertices[i, j, :]))
+    for j in range(NY - 1):
+        for i in range(1, NX):
+            fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + j * NX, i + 1 + (j + 1) * NX))
+            fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
+    fout.write("END")
+print(f"done writing {fname}")
 
-fout.close()

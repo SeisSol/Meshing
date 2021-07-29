@@ -66,33 +66,21 @@ class Face:
             myFace.reindex(vid)
             return myFace
 
-    def setup_proj_objects(self, sProj):
-        import pyproj
-
-        lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-        if sProj != "geocent":
-            myproj = pyproj.Proj(sProj)
-        else:
-            myproj = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
-        return lla, myproj
-
     def proj(self, sProj):
         "project the node coordinate array"
-        import pyproj
-
-        lla, myproj = self.setup_proj_objects(sProj)
+        from pyproj import Transformer
+        transformer = Transformer.from_crs("epsg:4326", sProj, always_xy=True)
         print("projecting the node coordinates")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(lla, myproj, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
         print(self.vertex)
         print("done projecting")
 
     def convert_projected_to_latlon(self, sProj):
         "Convert the already projected node coordinate array to lat/lon"
-        import pyproj
-
-        lla, myproj = self.setup_proj_objects(sProj)
+        from pyproj import Transformer
+        transformer = Transformer.from_crs(sProj, "epsg:4326", always_xy=True)
         print("convert the node coordinates to lat/lon")
-        self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2] = pyproj.transform(myproj, lla, self.vertex[:, 0], self.vertex[:, 1], self.vertex[:, 2], radians=False)
+        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
         print(self.vertex)
         print("done converting")
 
@@ -139,7 +127,7 @@ class Face:
 
     def __computeNormal(self, vertex):
         " compute efficiently the normals "
-        normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :])
+        normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :]).astype(float)
         norm = np.linalg.norm(normal, axis=1)
         self.normal = np.divide(normal, norm[:, None])
 
