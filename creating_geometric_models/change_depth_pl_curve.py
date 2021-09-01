@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Author: Thomas Ulrich, LMU
 
 # parsing python arguments
