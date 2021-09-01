@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from Face import Face
 import argparse
 import os

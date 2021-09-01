@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # convert inp (from SimModeler 2d mesh (ABAQUS 2D)) to ts (Gocad)
 import argparse
 import numpy as np
