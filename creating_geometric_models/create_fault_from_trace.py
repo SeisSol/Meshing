@@ -63,24 +63,83 @@ def compute_rel_curvilinear_coordinate(nodes):
     reldist[reldist > 1] = 1.0
     return reldist
 
-
-def generate_vertices(depth, sign=1):
-    nd = depth.shape[0]
+def generate_vertices_constant_dip(maxdepth, sign=1):
+    """
+    extends 2d fault trace (nodes array) along constant dip
+    returns a 3d array of vertices coordinates
+    """
+    nd = int(maxdepth / (sin(dip) * dx))
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
-    if args.dipType == dipType.CONSTANT:
-        # moved out of the loop: call to math.tan slow down significantly the code
-        one_over_tan_dip = 1.0 / tan(dip)
+    one_over_tan_dip = 1.0 / tan(dip)
     for i in range(0, nx):
-        if args.dipType == dipType.STRIKE_DEPENDENT:
-            one_over_tan_dip = 1.0 / tan(aDip[i])
+        ud = -(one_over_tan_dip * av1[i, :] - uz)
+        ud = ud / np.linalg.norm(ud)
         for j in range(1, nd):
-            if args.dipType == dipType.DEPTH_DEPENDENT:
-                mydip = dipangle(depth[j] + vertices[i, 0, 2])
-                one_over_tan_dip = 1.0 / tan(mydip)
+            vertices[i, j, :] = vertices[i, j - 1, :] - sign * dx * ud
+    return vertices
+
+
+def generate_vertices_dip_vary_along_strike(maxdepth, sign=1):
+    """
+    extends 2d fault trace (nodes array) along dip, with dip varying along strike
+    In this case we use constant depth strides between along dip vertices
+    that is the size of the mesh along dip will vary with dip
+    returns a 3d array of vertices coordinates
+    """
+    nd = int(maxdepth / dx)
+    vertices = np.zeros((nx, nd, 3))
+    vertices[:, 0, :] = nodes
+    for i in range(0, nx):
+        one_over_tan_dip = 1.0 / tan(aDip[i])
+        for j in range(1, nd):
             ud = -(one_over_tan_dip * av1[i, :] - uz)
             vertices[i, j, :] = vertices[i, j - 1, :] - sign * dx * ud
     return vertices
+
+
+def generate_vertices_dip_vary_along_dip(maxdepth, sign=1):
+    """
+    extends 2d fault trace (nodes array) along depth-dependent dip
+    returns a 3d array of vertices coordinates
+    """
+    # compute depth array
+    current_depth = 0.0
+    depth = []
+    while True:
+        depth.append(current_depth)
+        current_depth += dx * sin(dipangle(-sign * current_depth))
+        if current_depth > maxdepth:
+            depth = np.array(depth)
+            break
+    nd = depth.shape[0]
+    vertices = np.zeros((nx, nd, 3))
+    vertices[:, 0, :] = nodes
+    for i in range(0, nx):
+        for j in range(1, nd):
+            mydip = dipangle(-sign * depth[j] + vertices[i, 0, 2])
+            one_over_tan_dip = 1.0 / tan(mydip)
+            ud = -(one_over_tan_dip * av1[i, :] - uz)
+            ud = ud / np.linalg.norm(ud)
+            vertices[i, j, :] = vertices[i, j - 1, :] - sign * dx * ud
+    return vertices
+
+
+def get_vertice_generator(mydipType):
+    """
+    creator component of the factory method
+    """
+    if mydipType == dipType.CONSTANT:
+        return generate_vertices_constant_dip
+    elif mydipType == dipType.DEPTH_DEPENDENT:
+        return generate_vertices_dip_vary_along_dip
+    else:
+        return generate_vertices_dip_vary_along_strike
+
+
+def generate_vertices(maxdepth, sign=1):
+    vertice_getter = get_vertice_generator(args.dipType)
+    return vertice_getter(maxdepth, sign)
 
 
 dx = args.dd[0]
@@ -213,14 +272,11 @@ for i in range(0, nx):
     av1[i, :] = np.array([-v0[1], v0[0], 0])
 
 # Create new vertex below 0
-depth = -np.arange(0, args.maxdepth[0], dx)
-vertices = generate_vertices(depth)
-
+vertices = generate_vertices(args.maxdepth[0])
 # Create new vertex above 0
 if args.extend[0] > 0:
     # Extension toward z plus
-    depth = np.arange(0, args.extend[0], dx)
-    vertices2 = np.flip(generate_vertices(depth, sign=-1), axis=1)
+    vertices2 = np.flip(generate_vertices(args.extend[0], sign=-1), axis=1)
     vertices = np.concatenate((vertices2, vertices[:, 1:, :]), axis=1)
 nd = vertices.shape[1]
 
