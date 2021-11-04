@@ -25,16 +25,16 @@ def ParseInp(fname, bIsolate):
 
     # Fill in vertex array
     vid_lookup = {}
-    for i in range(inodes, iel - 1):
+    for i0, i in enumerate(range(inodes, iel - 1)):
         vals = lines[i].split(",")
-        vid_lookup[int(vals[0])] = i - inodes
-        vertex[i - inodes, :] = [float(val) for val in vals[1:4]]
+        vid_lookup[int(vals[0])] = i0
+        vertex[i0, :] = [float(val) for val in vals[1:4]]
 
     # Fill in the triangles array
     faces = []
     triangles = []
 
-    for i in range(iel, len(lines)):
+    for i in range(iel, nlines):
         line = lines[i]
         if line.startswith("*Element"):
             if bIsolate:
@@ -50,8 +50,13 @@ def ParseInp(fname, bIsolate):
 
     for myFace in faces:
         myFace.reindex(vid_lookup)
-
-    return vertex, faces
+        # reorder vertex from 0 to n where n is the number of vertice in the face
+        unique_vid = list(set(list(myFace.connect.flatten())))
+        vid_lu = {unique_vid[k]: k for k in range(len(unique_vid))}
+        myFace.reindex(vid_lu)
+        vertex0 = vertex[unique_vid, :]
+        myFace.vertex = vertex0
+    return faces
 
 
 parser = argparse.ArgumentParser(description="convert inp (from SimModeler5 2d mesh (ABAQUS 2D)) to ts (Gocad), stl or bstl")
@@ -65,12 +70,12 @@ if args.output_filename == "":
     args.output_filename = args.inp_filename[0:-4] + ".ts"
 basename, ext = os.path.splitext(args.output_filename)
 
-vertex, faces = ParseInp(args.inp_filename, args.isolate)
+faces = ParseInp(args.inp_filename, args.isolate)
 
 for i, myFace in enumerate(faces):
     fname = basename + str(i) + ext
     if ext in [".stl", ".ts"]:
-        myFace.write(args.output_filename, vertex, append=(i != 0))
+        myFace.write(args.output_filename, append=(i != 0))
     else:
         fname = basename + str(i) + ext
-        myFace.write(fname, vertex)
+        myFace.write(fname)
