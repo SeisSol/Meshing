@@ -106,12 +106,10 @@ def generate_vertices_dip_vary_along_dip(maxdepth, sign=1):
     # compute depth array
     current_depth = 0.0
     depth = []
-    while True:
+    while current_depth <= maxdepth:
         depth.append(current_depth)
         current_depth += dx * sin(dipangle(-sign * current_depth))
-        if current_depth > maxdepth:
-            depth = np.array(depth)
-            break
+    depth = np.array(depth)
     nd = depth.shape[0]
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
