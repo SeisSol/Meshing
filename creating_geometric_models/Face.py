@@ -102,6 +102,25 @@ class Face:
         "return the common nodes between self and Face2"
         return np.intersect1d(self.compute_id_vertex(), Face2.compute_id_vertex())
 
+    def enforce_min_depth(self, zmin):
+        "decrase vertex depth where z>zmin and is not a face boundary"
+        import trimesh
+
+        mesh = trimesh.Trimesh(self.vertex, self.connect)
+
+        # list vertex of the face boundary
+        unique_edges = mesh.edges[trimesh.grouping.group_rows(mesh.edges_sorted, require_count=1)]
+        boundary_vid = np.array(list(set(list(unique_edges.flatten()))))
+        # mask shallow water region
+        shallow = np.where(mesh.vertices[:, 2] > zmin)
+        mask_shallow = np.zeros(mesh.vertices.shape[0], dtype=bool)
+        mask_shallow[shallow] = True
+        mask_shallow[boundary_vid] = False
+
+        mesh.vertices[mask_shallow, 2] = zmin
+        self.vertex = mesh.vertices
+        self.connect = mesh.faces
+
     def reindex(self, vid_lookup):
         print("reindexing triangles...")
         for itr in range(self.ntriangles):

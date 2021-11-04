@@ -63,6 +63,7 @@ parser = argparse.ArgumentParser(description="convert inp (from SimModeler5 2d m
 parser.add_argument("inp_filename", help="inp filename (SimModeler5 2d mesh (ABAQUS 2D))")
 parser.add_argument("output_filename", nargs="?", help="output filname (if not used = inpbasename.ts)", default="")
 parser.add_argument("--isolate", dest="isolate", action="store_true", help="isolate every surface in a different ts file")
+parser.add_argument("--enforce_min_depth", nargs=1, help="move all non boundary vertices higher than zmin to zmin", type=float, metavar=("zmin"))
 args = parser.parse_args()
 
 
@@ -73,6 +74,9 @@ basename, ext = os.path.splitext(args.output_filename)
 faces = ParseInp(args.inp_filename, args.isolate)
 
 for i, myFace in enumerate(faces):
+    if args.enforce_min_depth:
+        myFace.enforce_min_depth(args.enforce_min_depth[0])
+
     fname = basename + str(i) + ext
     if ext in [".stl", ".ts"]:
         myFace.write(args.output_filename, append=(i != 0))
