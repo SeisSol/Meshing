@@ -5,6 +5,7 @@ import os
 from Face import Face
 from Grid import Grid
 
+
 parser = argparse.ArgumentParser(description="create surface from a (possibly sparse, e.g. Slab2.0 dataset) structured dataset (e.g. netcdf)")
 parser.add_argument("input_file", help="netcdf file")
 parser.add_argument("output_file", help="output file (ext in stl, bstl, ts)")
@@ -12,9 +13,15 @@ parser.add_argument("--subsample", nargs=1, type=int, metavar=("onesample_every"
 parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
 parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
 parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
-parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
- projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
+parser.add_argument(
+    "--proj",
+    nargs=1,
+    metavar=("projname"),
+    help="transform vertex array to projected system.\
+ projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)",
+)
 parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
+parser.add_argument("--smooth", nargs=1, metavar=("zrange"), help="smooth zgrid for -zrange < z < zrange", type=float)
 args = parser.parse_args()
 
 if args.objectname == "":
@@ -25,6 +32,10 @@ else:
 
 structured_grid = Grid(args.input_file, args.subsample[0])
 structured_grid.crop(args.crop)
+
+if args.smooth:
+    structured_grid.smooth(args.smooth[0])
+
 structured_grid.generate_vertex()
 
 structured_grid.generate_connect()

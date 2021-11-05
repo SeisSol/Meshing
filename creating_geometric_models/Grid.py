@@ -171,7 +171,7 @@ class Grid:
         self.remove_nan_generate_vid_lookup()
 
     def remove_nan_generate_vid_lookup(self):
-        " Generate vertex lookup array for reindexing"
+        "Generate vertex lookup array for reindexing"
         nvertex = self.vertex.shape[0]
         idv = np.linspace(0, nvertex - 1, nvertex, dtype=int)
         valid = ~np.isnan(self.vertex)[:, 2]
@@ -206,3 +206,13 @@ class Grid:
             if max(self.solid_id) == 0:
                 raise ValueError("no hole was tagged")
             print("done tagging hole")
+
+    def smooth(self, zrange):
+        "Smooth bathymetry in range +- zrange"
+        "This is useful when preprocessing bathymetry data before intersection"
+        import scipy.ndimage as ndimage
+
+        z_smooth = ndimage.gaussian_filter(self.z, sigma=(1, 1), order=0)
+        ids = np.where(abs(self.z) < zrange)
+        self.z[ids] = z_smooth[ids]
+        print("done smoothing bathymetry")
