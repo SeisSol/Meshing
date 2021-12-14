@@ -43,7 +43,7 @@
 #include <string>
 #include <vector>
 
-#include "KDTree.h"
+#include "LinearReceiverSearch.h"
 
 class Mesh {
 public:
@@ -52,7 +52,7 @@ public:
   
   void readPartition(int partition);
 
-	size_t partitions;
+  size_t partitions;
   int* elementSize;
   int* vertexSize;
   int* elementBoundaries;
@@ -67,6 +67,6 @@ private:
 };
 
 std::vector<Point> readReceiverFile(std::string const& fileName);
-void writeReceiverFile(KDTree const& tree, std::string const& fileName);
+void writeReceiverFile(LinearReceiverSearch const& search, std::string const& fileName);
 
 #endif

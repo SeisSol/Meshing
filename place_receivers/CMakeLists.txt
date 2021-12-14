@@ -16,11 +16,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 
-add_executable(place_receivers 
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/Geometry.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/KDTree.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/Reader.cpp
+add_executable(place_receivers
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Geometry.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Reader.cpp
   )
 
 target_include_directories(place_receivers PUBLIC src

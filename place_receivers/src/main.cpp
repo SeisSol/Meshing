@@ -42,8 +42,9 @@
 #include <iostream>
 #include <utils/args.h>
 
-#include "Reader.h"
 #include "Geometry.h"
+#include "LinearReceiverSearch.h"
+#include "Reader.h"
 
 int main(int argc, char** argv)
 {
@@ -64,7 +65,7 @@ int main(int argc, char** argv)
 
   std::vector<Point> receivers = readReceiverFile(receiverFile);
   std::cout << "Read " << receivers.size() << " receivers." << std::endl;
-  KDTree tree(receivers, 1);
+  LinearReceiverSearch receiverSearcher{receivers};
   
   Mesh mesh(meshFile);
   
@@ -74,10 +75,10 @@ int main(int argc, char** argv)
     }
 
     mesh.readPartition(p);
-    setElevation(p, depth, mesh, tree);
+    setElevation(p, depth, mesh, receiverSearcher);
   }
 
-  writeReceiverFile(tree, receiverOutputFile); 
+  writeReceiverFile(receiverSearcher, receiverOutputFile);
   
   return 0;
 }

@@ -39,12 +39,13 @@
  **/
 
 #include "Reader.h"
+#include "LinearReceiverSearch.h"
 #include "PUML/PUML.h"
-#include <cstdlib>
 #include <cmath>
-#include <iostream>
-#include <iomanip>
+#include <cstdlib>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #ifdef USE_NETCDF
@@ -73,17 +74,14 @@ std::vector<Point> readReceiverFile(std::string const& fileName) {
   return locations;
 }
 
-void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
+void writeReceiverFile(LinearReceiverSearch const&searcher, std::string const& fileName) {
   std::ofstream out(fileName.c_str());
   out << std::scientific << std::setprecision(16);
   
   int failureCounter = 0;
-  Point const* points = tree.points();
-  std::vector<Point> sortedPoints(tree.numPoints());
-  for (unsigned p = 0; p < tree.numPoints(); ++p) {
-    sortedPoints[tree.index(p)] = points[p];
-  }
-  for (auto const& point : sortedPoints) {
+  const std::vector<Point>& points = searcher.getReceivers();
+
+  for (auto const& point : points) {
     if (!std::isnan(point.z)) {
       out << point.x << " " << point.y << " " << point.z << std::endl;
     } else {

@@ -40,10 +40,11 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+#include "LinearReceiverSearch.h"
 #include "Reader.h"
-#include "KDTree.h"
 
-void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree);
+void setElevation(int partition, double depth, Mesh const& mesh,
+                  LinearReceiverSearch & searcher);
 
 
 #endif
