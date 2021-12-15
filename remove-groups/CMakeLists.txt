@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.16)
 
 project(remove-groups LANGUAGES C CXX)
 
-option(sanitizer "Use address sanitizer when debugging" ON)
+option(sanitizer "Use address sanitizer when debugging" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,8 +22,11 @@ add_executable(remove-groups
 
 target_include_directories(remove-groups PUBLIC src
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  "${CMAKE_CURRENT_SOURCE_DIR}/submodules/"
 )
+
+target_include_directories(remove-groups PUBLIC SYSTEM src
+        "${CMAKE_CURRENT_SOURCE_DIR}/submodules/"
+        )
 
 target_compile_options(remove-groups PUBLIC -Wall -Wextra)
 target_link_libraries(remove-groups PUBLIC "-lstdc++fs")

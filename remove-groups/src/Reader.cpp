@@ -15,9 +15,8 @@ Mesh::Mesh(const std::string &fileName) {
   puml.addData((fileName + ":/boundary").c_str(), PUML::CELL);
   puml.generateMesh();
 
-  const auto &cells = puml.cells();
-  const auto &faces = puml.faces();
-  const auto &verticesPuml = puml.vertices();
+  const auto& cells = puml.cells();
+  const auto& verticesPuml = puml.vertices();
   elementSize = cells.size();
   vertexSize = verticesPuml.size();
 
@@ -37,7 +36,7 @@ Mesh::Mesh(const std::string &fileName) {
       vertices[verticesOffset++] = coordinate[i];
     }
   }
-  for (int cell = 0; cell < elementSize; ++cell) {
+  for (unsigned cell = 0; cell < elementSize; ++cell) {
     elementGroups[cell] = puml.cellData(0)[cell];
 
     std::array<unsigned int, 4> curVertices{};

@@ -8,7 +8,7 @@
 
 class Mesh {
 public:
-    using neighbor_t = std::optional<int>;
+    using neighbor_t = std::optional<unsigned>;
     using neighbors_t = std::array<neighbor_t, 4>;
     using boundaries_t = std::array<int, 4>;
 

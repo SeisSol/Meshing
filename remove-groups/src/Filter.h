@@ -8,8 +8,8 @@ void removeGroups(Mesh &mesh,
                   const std::set<unsigned int> &groupsToRemove) {
   int removedCells = 0;
   // Map old element/vertex id -> new element/vertex id
-  std::unordered_map<int, int> elementMap;
-  std::unordered_map<int, int> vertexMap;
+  std::unordered_map<unsigned, unsigned> elementMap;
+  std::unordered_map<unsigned, unsigned> vertexMap;
 
   std::cout << "Finding cells to remove" << std::endl;
   auto elementCounter = 0UL;
@@ -18,8 +18,8 @@ void removeGroups(Mesh &mesh,
     if (groupsToRemove.count(mesh.elementGroups[cell]) > 0) {
       // Remove cell
       ++removedCells;
-      mesh.elementGroups[cell] = 42;
       const auto &neighbors = mesh.neighbors[cell];
+      // For all neighbors, set face type to free surface in slot of current cell
       for (auto neighborId : neighbors) {
         if (neighborId) {
           auto &neighborBnds = mesh.elementBoundaries[*neighborId];
@@ -95,7 +95,7 @@ void removeGroups(Mesh &mesh,
   std::cout << "Adjusting vertices" << std::endl;
 
   auto newVertices = std::vector<double>(vertexCounter * 3);
-  for (int vertex = 0; vertex < mesh.vertexSize; ++vertex) {
+  for (unsigned vertex = 0; vertex < mesh.vertexSize; ++vertex) {
     if (vertexMap.find(vertex) == vertexMap.end()) continue;
     auto newVertexId = vertexMap[vertex];
     for (int i = 0; i < 3; ++i) {

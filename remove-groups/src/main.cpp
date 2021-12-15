@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   utils::Args args;
   args.addOption("input", 'i', "input mesh");
   args.addOption("output", 'o', "output mesh");
-  args.addOption("remove-groups", 'g', "groups to remove");
+  args.addOption("remove-groups", 'g', "groups to remove as comma-separated list");
 
   if (args.parse(argc, argv) != utils::Args::Success) {
     return -1;
