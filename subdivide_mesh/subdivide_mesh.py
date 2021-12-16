@@ -21,7 +21,7 @@ def write_xdmf_mesh(filename, geom, connect, boundary, group):
 
 
 def unpack_boundary(boundary):
-    return np.array([0xFF & (boundary >> (8 * i)) for i in range(4)])
+    return np.array([0xFF & (boundary >> (8 * i)) for i in range(4)]).flatten()
 
 
 def pack_boundary(boundary):
@@ -45,13 +45,13 @@ def subdivide_element(index, geom, connect, boundary, group):
     new_connect = np.array(
         [
             [0, 4, 5, 6],
-            [1, 4, 7, 8],
+            [1, 4, 8, 7],
             [2, 5, 7, 9],
-            [3, 6, 8, 9],
+            [3, 6, 9, 8],
             [4, 5, 6, 8],
-            [4, 5, 7, 8],
+            [4, 5, 8, 7],
             [5, 6, 8, 9],
-            [5, 7, 8, 9],
+            [5, 7, 9, 8],
         ]
     )
 
@@ -59,11 +59,11 @@ def subdivide_element(index, geom, connect, boundary, group):
     modified_boundary = np.array(
         [
             [original_boundary[0], original_boundary[1], 0, original_boundary[3]],
-            [original_boundary[0], original_boundary[1], 0, original_boundary[2]],
+            [original_boundary[1], original_boundary[0], 0, original_boundary[2]],
             [original_boundary[0], original_boundary[3], 0, original_boundary[2]],
-            [original_boundary[1], original_boundary[3], 0, original_boundary[2]],
+            [original_boundary[3], original_boundary[1], 0, original_boundary[2]],
             [0, 0, 0, original_boundary[1]],
-            [original_boundary[0], 0, 0, 0],
+            [0, original_boundary[0], 0, 0],
             [0, original_boundary[3], 0, 0],
             [0, 0, original_boundary[2], 0],
         ]
@@ -83,11 +83,11 @@ if __name__ == "__main__":
 
     parse_filename = re.compile("(.+)\.xdmf")
 
-    filename_prefix = parse_filename.match(args.filename).group(1)
+    filename_prefix = parse_filename.match(args.filename)
     if filename_prefix == None:
         print("Need to specify an xdmf file")
         quit()
-    prefix_out = f"{filename_prefix}-subdivided"
+    prefix_out = f"{filename_prefix.group(1)}-subdivided"
 
     geom, connect, boundary, group = read_xdmf_mesh(args.filename)
 
