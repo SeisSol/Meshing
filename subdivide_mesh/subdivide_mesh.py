@@ -4,6 +4,7 @@ import seissolxdmfwriter as sw
 import numpy as np
 import re
 import argparse
+from numba import jit, njit, prange
 
 
 def read_xdmf_mesh(filename):
@@ -21,14 +22,17 @@ def write_xdmf_mesh(filename, geom, connect, boundary, group):
     )
 
 
+@njit(cache=True)
 def unpack_boundary(boundary):
     return np.array([0xFF & (boundary >> (8 * i)) for i in range(4)]).flatten()
 
 
+@njit(cache=True)
 def pack_boundary(boundary):
     return boundary[0] + (boundary[1] << 8) + (boundary[2] << 16) + (boundary[3] << 24)
 
 
+@njit(cache=True)
 def subdivide_element(
     index,
     geom,
@@ -40,6 +44,7 @@ def subdivide_element(
     new_boundary,
     new_group,
 ):
+    i = index
     element = connect[index, :]
     vertices = geom[element]
     a = vertices[0, :]
@@ -52,7 +57,17 @@ def subdivide_element(
     bc = 0.5 * (b + c)
     bd = 0.5 * (b + d)
     cd = 0.5 * (c + d)
-    new_geom[10 * i : 10 * (i + 1), :] = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
+    #new_geom[10 * i : 10 * (i + 1), :] = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
+    new_geom[10 * i + 0, :] = a
+    new_geom[10 * i + 1, :] = b
+    new_geom[10 * i + 2, :] = c
+    new_geom[10 * i + 3, :] = d
+    new_geom[10 * i + 4, :] = ab
+    new_geom[10 * i + 5, :] = ac
+    new_geom[10 * i + 6, :] = ad
+    new_geom[10 * i + 7, :] = bc
+    new_geom[10 * i + 8, :] = bd
+    new_geom[10 * i + 9, :] = cd
     new_connect[8 * i : 8 * (i + 1), :] = (
         np.array(
             [
@@ -88,8 +103,30 @@ def subdivide_element(
     )
     new_group[8 * i : 8 * (i + 1)] = np.array([group[index]] * 8)
 
+@njit(parallel=False, cache=True)
+def do_subdivide(geom, connect, boundary, group):
+    number_of_elements = connect.shape[0]
+    new_geom = np.zeros((10 * number_of_elements, 3), dtype=np.float64)
+    new_connect = np.zeros((8 * number_of_elements, 4), dtype=np.uint64)
+    new_boundary = np.zeros((8 * number_of_elements,), dtype=np.int32)
+    new_group = np.zeros((8 * number_of_elements,), dtype=np.int32)
 
-8
+    for i in prange(number_of_elements):
+        subdivide_element(
+            i,
+            geom,
+            connect,
+            boundary,
+            group,
+            new_geom,
+            new_connect,
+            new_boundary,
+            new_group,
+        )
+
+    return new_geom, new_connect, new_boundary, new_group
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -108,27 +145,10 @@ if __name__ == "__main__":
 
     geom, connect, boundary, group = read_xdmf_mesh(args.filename)
 
-    number_of_elements = connect.shape[0]
-    new_geom = np.zeros((10 * number_of_elements, 3), dtype=np.float64)
-    new_connect = np.zeros((8 * number_of_elements, 4), dtype=np.uint64)
-    new_boundary = np.zeros((8 * number_of_elements,), dtype=np.int32)
-    new_group = np.zeros((8 * number_of_elements,), dtype=np.int32)
-
-    for i in range(number_of_elements):
-        print(i / number_of_elements)
-        subdivide_element(
-            i,
-            geom,
-            connect,
-            boundary,
-            group,
-            new_geom,
-            new_connect,
-            new_boundary,
-            new_group,
-        )
-
+    new_geom, new_connect, new_boundary, new_group = do_subdivide(geom, connect, boundary, group)
+    # Needs to be outside jit
     new_geom, inverse = np.unique(new_geom, return_inverse=True, axis=0)
     new_connect = inverse[new_connect]
+
 
     write_xdmf_mesh(prefix_out, new_geom, new_connect, new_boundary, new_group)
