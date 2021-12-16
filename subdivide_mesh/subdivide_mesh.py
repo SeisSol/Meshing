@@ -29,7 +29,17 @@ def pack_boundary(boundary):
     return boundary[0] + (boundary[1] << 8) + (boundary[2] << 16) + (boundary[3] << 24)
 
 
-def subdivide_element(index, geom, connect, boundary, group):
+def subdivide_element(
+    index,
+    geom,
+    connect,
+    boundary,
+    group,
+    new_geom,
+    new_connect,
+    new_boundary,
+    new_group,
+):
     element = connect[index, :]
     vertices = geom[element]
     a = vertices[0, :]
@@ -42,18 +52,21 @@ def subdivide_element(index, geom, connect, boundary, group):
     bc = 0.5 * (b + c)
     bd = 0.5 * (b + d)
     cd = 0.5 * (c + d)
-    new_geom = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
-    new_connect = np.array(
-        [
-            [0, 4, 5, 6],
-            [1, 4, 8, 7],
-            [2, 5, 7, 9],
-            [3, 6, 9, 8],
-            [4, 5, 6, 8],
-            [4, 5, 8, 7],
-            [5, 6, 8, 9],
-            [5, 7, 9, 8],
-        ]
+    new_geom[10 * i : 10 * (i + 1), :] = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
+    new_connect[8 * i : 8 * (i + 1), :] = (
+        np.array(
+            [
+                [0, 4, 5, 6],
+                [1, 4, 8, 7],
+                [2, 5, 7, 9],
+                [3, 6, 9, 8],
+                [4, 5, 6, 8],
+                [4, 5, 8, 7],
+                [5, 6, 8, 9],
+                [5, 7, 9, 8],
+            ]
+        )
+        + 10 * i
     )
 
     original_boundary = unpack_boundary(boundary[index])
@@ -70,10 +83,13 @@ def subdivide_element(index, geom, connect, boundary, group):
         ]
     )
 
-    new_boundary = np.array([pack_boundary(b) for b in modified_boundary])
-    new_group = np.array([group[index]] * 8)
-    return new_geom, new_connect, new_boundary, new_group
+    new_boundary[8 * i : 8 * (i + 1)] = np.array(
+        [pack_boundary(b) for b in modified_boundary]
+    )
+    new_group[8 * i : 8 * (i + 1)] = np.array([group[index]] * 8)
 
+
+8
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -99,14 +115,18 @@ if __name__ == "__main__":
     new_group = np.zeros((8 * number_of_elements,), dtype=np.int32)
 
     for i in range(number_of_elements):
-        local_geom, local_connect, local_boundary, local_group = subdivide_element(
-            i, geom, connect, boundary, group
+        print(i / number_of_elements)
+        subdivide_element(
+            i,
+            geom,
+            connect,
+            boundary,
+            group,
+            new_geom,
+            new_connect,
+            new_boundary,
+            new_group,
         )
-
-        new_geom[10 * i : 10 * (i + 1), :] = local_geom
-        new_connect[8 * i : 8 * (i + 1), :] = local_connect + 10 * i
-        new_boundary[8 * i : 8 * (i + 1)] = local_boundary.flatten()
-        new_group[8 * i : 8 * (i + 1)] = local_group.flatten()
 
     new_geom, inverse = np.unique(new_geom, return_inverse=True, axis=0)
     new_connect = inverse[new_connect]
