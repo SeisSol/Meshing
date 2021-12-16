@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import seissolxdmf as sx
 import seissolxdmfwriter as sw
 import numpy as np
