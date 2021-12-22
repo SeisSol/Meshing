@@ -5,6 +5,15 @@ import numpy as np
 import re
 import argparse
 from numba import jit, njit, prange
+import os
+
+parse_version = re.compile("(\d+)\.(\d+)\.(\d+)")
+version = [int(v) for v in parse_version.match(sw.__version__).groups()]
+if (version[0] == 0) and (version[1] < 2):
+    print(
+        f"Need at least seissolxdmfwriter version 0.2.0, but found {version[0]}.{version[1]}.{version[2]}"
+    )
+    quit()
 
 
 def read_xdmf_mesh(filename):
@@ -57,7 +66,7 @@ def subdivide_element(
     bc = 0.5 * (b + c)
     bd = 0.5 * (b + d)
     cd = 0.5 * (c + d)
-    #new_geom[10 * i : 10 * (i + 1), :] = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
+    # new_geom[10 * i : 10 * (i + 1), :] = np.array([a, b, c, d, ab, ac, ad, bc, bd, cd])
     new_geom[10 * i + 0, :] = a
     new_geom[10 * i + 1, :] = b
     new_geom[10 * i + 2, :] = c
@@ -103,6 +112,7 @@ def subdivide_element(
     )
     new_group[8 * i : 8 * (i + 1)] = np.array([group[index]] * 8)
 
+
 @njit(parallel=False, cache=True)
 def do_subdivide(geom, connect, boundary, group):
     number_of_elements = connect.shape[0]
@@ -127,7 +137,6 @@ def do_subdivide(geom, connect, boundary, group):
     return new_geom, new_connect, new_boundary, new_group
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Read xdmf mesh and subdivide each element into eight subelements"
@@ -141,14 +150,15 @@ if __name__ == "__main__":
     if filename_prefix == None:
         print("Need to specify an xdmf file")
         quit()
-    prefix_out = f"{filename_prefix.group(1)}-subdivided"
+    prefix_out = os.path.basename(f"{filename_prefix.group(1)}-subdivided")
 
     geom, connect, boundary, group = read_xdmf_mesh(args.filename)
 
-    new_geom, new_connect, new_boundary, new_group = do_subdivide(geom, connect, boundary, group)
+    new_geom, new_connect, new_boundary, new_group = do_subdivide(
+        geom, connect, boundary, group
+    )
     # Needs to be outside jit
     new_geom, inverse = np.unique(new_geom, return_inverse=True, axis=0)
     new_connect = inverse[new_connect]
-
 
     write_xdmf_mesh(prefix_out, new_geom, new_connect, new_boundary, new_group)
