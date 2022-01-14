@@ -59,6 +59,13 @@ class Grid:
         self.x = fh.variables[xvar][0::downsample]
         self.y = fh.variables[yvar][0::downsample]
         self.z = fh.variables[zvar][0::downsample, 0::downsample]
+
+        # transpose z if z was given as (lon, lat)
+        dim_name_y = fh.variables[yvar].dimensions
+        dim_name_z = fh.variables[zvar].dimensions
+        if dim_name_y != dim_name_z[0]:
+            self.z = self.z.T
+
         if np.ma.is_masked(self.z):
             self.z = np.ma.filled(self.z, float("nan")) * 1e3
             self.is_sparse = True
