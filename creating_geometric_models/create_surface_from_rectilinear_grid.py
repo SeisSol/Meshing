@@ -63,7 +63,7 @@ class Grid:
         # transpose z if z was given as (lon, lat)
         dim_name_y = fh.variables[yvar].dimensions
         dim_name_z = fh.variables[zvar].dimensions
-        if dim_name_y != dim_name_z[0]:
+        if dim_name_y[0] != dim_name_z[0]:
             self.z = self.z.T
 
         if np.ma.is_masked(self.z):
