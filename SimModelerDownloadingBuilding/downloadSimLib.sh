@@ -47,7 +47,7 @@ done
 # to extract the tarball names
 
 if [ "$downloadcode" = "0" ]; then 
-    components=( gmcore-linux64.tgz aciskrnl-linux64.tgz discrete-linux64.tgz fdcore-linux64.tgz gmabstract-linux64.tgz gmadv-linux64.tgz msadapt-linux64.tgz msadv-linux64.tgz mscore-linux64.tgz msparalleladapt-linux64.tgz msparallelmesh-linux64.tgz pskrnl-linux64.tgz )
+    components=( gmcore-linux64.tgz aciskrnl-linux64.tgz discrete-linux64.tgz fdcore-linux64.tgz gmabstract-linux64.tgz gmadv-linux64.tgz msadapt-linux64.tgz msadv-linux64.tgz mscore-linux64.tgz msparalleladapt-linux64.tgz msparallelmesh-linux64.tgz pskrnl-linux64.tgz simlicense-linux64.tgz )
 else
     components=()
 fi;
