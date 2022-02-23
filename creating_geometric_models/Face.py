@@ -69,6 +69,7 @@ class Face:
     def proj(self, sProj):
         "project the node coordinate array"
         from pyproj import Transformer
+
         transformer = Transformer.from_crs("epsg:4326", sProj, always_xy=True)
         print("projecting the node coordinates")
         self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
@@ -78,6 +79,7 @@ class Face:
     def convert_projected_to_latlon(self, sProj):
         "Convert the already projected node coordinate array to lat/lon"
         from pyproj import Transformer
+
         transformer = Transformer.from_crs(sProj, "epsg:4326", always_xy=True)
         print("convert the node coordinates to lat/lon")
         self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
@@ -100,18 +102,37 @@ class Face:
         "return the common nodes between self and Face2"
         return np.intersect1d(self.compute_id_vertex(), Face2.compute_id_vertex())
 
+    def enforce_min_depth(self, zmin):
+        "decrase vertex depth where z>zmin and is not a face boundary"
+        import trimesh
+
+        mesh = trimesh.Trimesh(self.vertex, self.connect)
+
+        # list vertex of the face boundary
+        unique_edges = mesh.edges[trimesh.grouping.group_rows(mesh.edges_sorted, require_count=1)]
+        boundary_vid = np.array(list(set(list(unique_edges.flatten()))))
+        # mask shallow water region
+        shallow = np.where(mesh.vertices[:, 2] > zmin)
+        mask_shallow = np.zeros(mesh.vertices.shape[0], dtype=bool)
+        mask_shallow[shallow] = True
+        mask_shallow[boundary_vid] = False
+
+        mesh.vertices[mask_shallow, 2] = zmin
+        self.vertex = mesh.vertices
+        self.connect = mesh.faces
+
     def reindex(self, vid_lookup):
         print("reindexing triangles...")
         for itr in range(self.ntriangles):
             for iv in range(3):
                 self.connect[itr, iv] = vid_lookup[self.connect[itr, iv]]
 
-    def __writeTs(self, fname, vertex, write_full_vertex_array=True, append=False):
-        """ output face as a *.ts file
-             vertex: nodes coordinates array
+    def __writeTs(self, fname, write_full_vertex_array=True, append=False):
+        """output face as a *.ts file
+        vertex: nodes coordinates array
         """
         if write_full_vertex_array:
-            vertex_id_2_write = range(1, len(vertex) + 1)
+            vertex_id_2_write = range(1, len(self.vertex) + 1)
         else:
             vertex_id_2_write = self.compute_id_vertex()
 
@@ -119,20 +140,20 @@ class Face:
         with open(fname, mode) as fout:
             fout.write("GOCAD TSURF 1\nHEADER {\nname:%s\nborder: true\nmesh: false\n*border*bstone: true\n}\nTFACE\n" % (fname))
             for ivx in vertex_id_2_write:
-                fout.write("VRTX %s %s %s %s\n" % (ivx, vertex[ivx - 1, 0], vertex[ivx - 1, 1], vertex[ivx - 1, 2]))
+                fout.write("VRTX %s %s %s %s\n" % (ivx, self.vertex[ivx - 1, 0], self.vertex[ivx - 1, 1], self.vertex[ivx - 1, 2]))
 
             for i in range(self.ntriangles):
                 fout.write("TRGL %d %d %d\n" % (self.connect[i, 0] + 1, self.connect[i, 1] + 1, self.connect[i, 2] + 1))
             fout.write("END\n")
 
-    def __computeNormal(self, vertex):
-        " compute efficiently the normals "
-        normal = np.cross(vertex[self.connect[:, 1], :] - vertex[self.connect[:, 0], :], vertex[self.connect[:, 2], :] - vertex[self.connect[:, 0], :]).astype(float)
+    def __computeNormal(self):
+        "compute efficiently the normals"
+        normal = np.cross(self.vertex[self.connect[:, 1], :] - self.vertex[self.connect[:, 0], :], self.vertex[self.connect[:, 2], :] - self.vertex[self.connect[:, 0], :]).astype(float)
         norm = np.linalg.norm(normal, axis=1)
         self.normal = np.divide(normal, norm[:, None])
 
-    def __writeStl(self, fname, vertex, append=False):
-        self.__computeNormal(vertex)
+    def __writeStl(self, fname, append=False):
+        self.__computeNormal()
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
             fout.write(f"solid {fname}\n")
@@ -140,37 +161,34 @@ class Face:
                 fout.write("facet normal %e %e %e\n" % tuple(self.normal[k, :]))
                 fout.write("outer loop\n")
                 for i in range(0, 3):
-                    fout.write("vertex %.10e %.10e %.10e\n" % tuple(vertex[self.connect[k, i], :]))
+                    fout.write("vertex %.10e %.10e %.10e\n" % tuple(self.vertex[self.connect[k, i], :]))
                 fout.write("endloop\n")
                 fout.write("endfacet\n")
             fout.write(f"endsolid {fname}\n")
 
-    def __writebStl(self, fname, vertex):
+    def __writebStl(self, fname):
         import struct
 
         fout = open(fname, "wb")
         fout.seek(80)
         fout.write(struct.pack("<L", self.ntriangles))
-        self.__computeNormal(vertex)
+        self.__computeNormal()
         for k in range(self.ntriangles):
             fout.write(struct.pack("<3f", *self.normal[k, :]))
             for i in range(0, 3):
-                fout.write(struct.pack("<3f", *vertex[self.connect[k, i], :]))
+                fout.write(struct.pack("<3f", *self.vertex[self.connect[k, i], :]))
             fout.write(struct.pack("<H", 0))
 
-    def write(self, fname, vertex=np.empty(0), write_full_vertex_array=True, append=False):
+    def write(self, fname, write_full_vertex_array=True, append=False):
         import os
-
-        if vertex.shape[0] == 0:
-            vertex = self.vertex
 
         basename, ext = os.path.splitext(fname)
         if ext == ".ts":
-            self.__writeTs(fname, vertex, write_full_vertex_array, append)
+            self.__writeTs(fname, write_full_vertex_array, append)
         elif ext == ".stl":
-            self.__writeStl(fname, vertex, append)
+            self.__writeStl(fname, append)
         elif ext == ".bstl":
-            self.__writebStl(fname, vertex)
+            self.__writebStl(fname)
         else:
             raise ValueError("format not supported", ext)
         print("done writing " + fname)
