@@ -20,8 +20,9 @@ class Grid:
         self.compute_nx_ny()
 
     def read_ascii_esri(self, fname, downsample):
-        "read ESRI ASCII Raster format, see e.g."
-        "https://desktop.arcgis.com/en/arcmap/latest/manage-data/raster-and-images/esri-ascii-raster-format.htm"
+        """read ESRI ASCII Raster format, see e.g.
+        https://desktop.arcgis.com/en/arcmap/latest/manage-data/raster-and-images/esri-ascii-raster-format.htm
+        """
         with open(fname) as fh:
             # Read header
             NX = int(fh.readline().split()[1])
