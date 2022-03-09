@@ -55,7 +55,7 @@ class Grid:
         zvar = self.determine_netcdf_variables(["elevation", "z", "Band1"])
         self.x = fh.variables[xvar][0::downsample]
         self.y = fh.variables[yvar][0::downsample]
-        self.z = fh.variables[zvar][0::downsample, 0::downsample]
+        self.z = fh.variables[zvar][0::downsample, 0::downsample].astype(float)
 
         # transpose z if z was given as (lon, lat)
         dim_name_y = fh.variables[yvar].dimensions
@@ -216,4 +216,14 @@ class Grid:
         z_smooth = ndimage.gaussian_filter(self.z, sigma=(1, 1), order=0)
         ids = np.where(abs(self.z) < zrange)
         self.z[ids] = z_smooth[ids]
+
         print("done smoothing bathymetry")
+
+    def change_zero_elevation(self, znew):
+        """Change elevation of points with z=0,
+        thus avoiding errors when interesecting with sea surface
+        This is useful when preprocessing bathymetry data before intersection"""
+        ids = np.where(abs(self.z) < 0.01)
+        npoints = ids[0].shape[0]
+        self.z[ids] = znew
+        print(f"{npoints} points with 0 elevation changed to z={znew}")

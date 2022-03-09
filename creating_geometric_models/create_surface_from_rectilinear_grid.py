@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description="create surface from a (possibly sp
 parser.add_argument("input_file", help="netcdf file")
 parser.add_argument("output_file", help="output file (ext in stl, bstl, ts)")
 parser.add_argument("--subsample", nargs=1, type=int, metavar=("onesample_every"), default=[1], help="use only one value every onesample_every in both direction")
-parser.add_argument("--objectname", nargs=1, metavar=("objectname"), default=(""), help="name of the surface in gocad")
+parser.add_argument("--objectname", nargs=1, metavar=("objectname"), help="name of the surface in gocad")
 parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
 parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
 parser.add_argument(
@@ -22,9 +22,10 @@ parser.add_argument(
 )
 parser.add_argument("--translate", nargs=2, metavar=("x0", "y0"), default=([0, 0]), help="translates all nodes by (x0,y0)", type=float)
 parser.add_argument("--smooth", nargs=1, metavar=("zrange"), help="smooth zgrid for -zrange < z < zrange", type=float)
+parser.add_argument("--change_zero_elevation", nargs=1, metavar=("new_elevation"), help="change elevation of points with z=0, thus avoiding errors when interesecting with sea surface", type=float)
 args = parser.parse_args()
 
-if args.objectname == "":
+if not args.objectname:
     base = os.path.basename(args.input_file)
     args.objectname = os.path.splitext(base)[0]
 else:
@@ -33,6 +34,8 @@ else:
 structured_grid = Grid(args.input_file, args.subsample[0])
 structured_grid.crop(args.crop)
 
+if args.change_zero_elevation:
+    structured_grid.change_zero_elevation(args.change_zero_elevation[0])
 if args.smooth:
     structured_grid.smooth(args.smooth[0])
 
