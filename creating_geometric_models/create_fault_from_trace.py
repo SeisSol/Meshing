@@ -68,7 +68,7 @@ def generate_vertices_constant_dip(maxdepth, sign=1):
     extends 2d fault trace (nodes array) along constant dip
     returns a 3d array of vertices coordinates
     """
-    nd = int(maxdepth / (sin(dip) * dx))
+    nd = int(maxdepth / (sin(np.abs(dip)) * dx))
     vertices = np.zeros((nx, nd, 3))
     vertices[:, 0, :] = nodes
     one_over_tan_dip = 1.0 / tan(dip)
