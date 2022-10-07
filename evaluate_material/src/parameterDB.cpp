@@ -1,9 +1,9 @@
 #include "parameterDB.h"
 
-#include "easi/Component.h"
-#include "easi/Query.h"
-#include "easi/ResultAdapter.h"
-#include "easi/YAMLParser.h"
+#include <easi/Component.h>
+#include <easi/Query.h>
+#include <easi/ResultAdapter.h>
+#include <easi/YAMLParser.h>
 
 ParameterDB::ParameterDB(const std::string& fileName) {
   auto parser = easi::YAMLParser(DIM);
