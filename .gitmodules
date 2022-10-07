@@ -7,15 +7,6 @@
 [submodule "submodules/glm"]
 	path = submodules/glm
 	url = ../../g-truc/glm.git
-[submodule "submodules/yaml-cpp"]
-	path = submodules/yaml-cpp
-	url = ../../jbeder/yaml-cpp
-[submodule "submodules/easi"]
-	path = submodules/easi
-	url = ../../SeisSol/easi.git
-[submodule "submodules/ImpalaJIT"]
-	path = submodules/ImpalaJIT
-	url = ../../Manuel1605/ImpalaJIT.git
 [submodule "place_receivers/submodules/PUML"]
 	path = submodules/PUML
 	url = ../../TUM-I5/PUML2.git

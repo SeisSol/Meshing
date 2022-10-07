@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "easi/Component.h"
-#include "easi/Query.h"
+#include <easi/Component.h>
+#include <easi/Query.h>
 
 class ParameterDB {
   public:

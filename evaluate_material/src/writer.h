@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "hdf5.h"
+#include <hdf5.h>
 
 #include "mesh.h"
 

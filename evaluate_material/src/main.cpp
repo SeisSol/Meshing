@@ -2,11 +2,11 @@
 #include <string>
 
 #include <mpi.h>
-#include <utils/args.h>
-#include <utils/logger.h>
 
 #include "mesh.h"
 #include "parameterDB.h"
+#include "utils/args.h"
+#include "utils/logger.h"
 #include "writer.h"
 
 int main(int argc, char** argv) {
