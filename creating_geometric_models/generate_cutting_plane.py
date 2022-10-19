@@ -49,10 +49,11 @@ normal = np.array(args.normal)
 if max(abs(nx), abs(ny)) == 0:
     ux = np.array([1.0, 0, 0])
     uz = np.array([0, 1.0, 0])
-ux = np.array([-ny, nx, 0.0])
-uz = np.cross(normal, ux)
-ux = ux / np.linalg.norm(ux)
-uz = uz / np.linalg.norm(uz)
+else:
+    ux = np.array([-ny, nx, 0.0])
+    uz = np.cross(normal, ux)
+    ux = ux / np.linalg.norm(ux)
+    uz = uz / np.linalg.norm(uz)
 
 center = np.array(args.center)
 lx, lz = args.dims
