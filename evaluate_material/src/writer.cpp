@@ -1,7 +1,7 @@
 #include "writer.h"
 
 void Writer::writeData(
-    hid_t h5file, const std::string& name, std::vector<hsize_t> sizes, Hdf5DataType type, const void* data) {
+    hid_t h5file, const std::string& name, const std::vector<hsize_t>& sizes, Hdf5DataType type, const void* data) {
   hid_t h5space = H5Screate_simple(sizes.size(), sizes.data(), nullptr);
   checkH5Err(h5space);
 
@@ -106,14 +106,14 @@ void Writer::writeHdf5(const std::vector<std::string>& parameterNames,
 
   writeData(h5file,
             "/group",
-            std::vector<hsize_t>({mesh.getElementGroups().size()}),
+            std::vector<hsize_t>{mesh.getElementGroups().size()},
             Hdf5DataType::hdf5Int32,
             mesh.getElementGroups().data());
 
   for (unsigned i = 0; i < parameterNames.size(); i++) {
     writeData(h5file,
               "/" + parameterNames[i],
-              std::vector<hsize_t>({mesh.getElementVertices().size()}),
+              std::vector<hsize_t>{mesh.getElementVertices().size()},
               Hdf5DataType::hdf5Double,
               materialValues[i].data());
   }

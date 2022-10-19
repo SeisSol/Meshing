@@ -39,6 +39,6 @@ class Writer {
                  const std::vector<std::vector<double>>& materialValues);
   void writeXdmf(const std::vector<std::string>& parameterNames);
   void
-      writeData(hid_t h5file, const std::string& name, std::vector<hsize_t> sizes, Hdf5DataType type, const void* data);
+      writeData(hid_t h5file, const std::string& name, const std::vector<hsize_t>& sizes, Hdf5DataType type, const void* data);
 };
 #endif
