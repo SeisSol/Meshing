@@ -130,7 +130,7 @@ for j in range(0, NY):
     for i in range(0, NX):
         if args.proj:
             xyz = transformer.transform(dataxyz[i, j, 0], dataxyz[i, j, 1])
-            fout.write(f"VRTX {i + j * NX + 1} {xyz[0]:.10e} %{xyz[1]:.10e} {dataxyz[i, j, 2]:.10e}\n")
+            fout.write(f"VRTX {i + j * NX + 1} {xyz[0]:.10e} {xyz[1]:.10e} {dataxyz[i, j, 2]:.10e}\n")
         else:
             fout.write("VRTX %d %f %f %f\n" % (i + j * NX + 1, dataxyz[i, j, 0], dataxyz[i, j, 1], dataxyz[i, j, 2]))
 for tr in triangles:
