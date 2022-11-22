@@ -55,7 +55,7 @@ def ParseInp(fname, bIsolate):
         vid_lu = {unique_vid[k]: k for k in range(len(unique_vid))}
         myFace.reindex(vid_lu)
         vertex0 = vertex[unique_vid, :]
-        myFace.vertex = vertex0
+        myFace.vertex = vertex0.astype(float)
     return faces
 
 

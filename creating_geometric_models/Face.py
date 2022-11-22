@@ -110,6 +110,10 @@ class Face:
         assert depth_min > 0
         # list vertex of the face boundary
         unique_edges = mesh.edges[trimesh.grouping.group_rows(mesh.edges_sorted, require_count=1)]
+        if len(unique_edges)==0:
+            raise ValueError("the surface mesh has no boundary edges. "
+                "This means you extracted an incorrect set of surfaces "
+                "(the surface mesh of a closed region).")
         boundary_vid = np.array(list(set(list(unique_edges.flatten()))))
         # mask shallow water region
         shallow = np.where(mesh.vertices[:, 2] > -depth_min)
