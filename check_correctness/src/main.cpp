@@ -9,6 +9,8 @@
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   utils::Args args;
   args.addOption("mesh", 'm', "mesh file (h5)");
@@ -19,11 +21,23 @@ int main(int argc, char** argv) {
 
   const auto meshFile = args.getArgument<std::string>("mesh");
 
-  logInfo() << "Read" << meshFile << ".";
+  if (rank == 0) {
+    logInfo() << "Read" << meshFile << ".";
+  }
   const Mesh mesh(meshFile);
-  mesh.checkNeighbors();
+  const bool correctOnRank = mesh.checkNeighbors();
+  bool correctOnAllRanks{true};
 
+  MPI_Reduce(&correctOnRank, &correctOnAllRanks, 1, MPI_CXX_BOOL, MPI_LAND, 0, MPI_COMM_WORLD);
   MPI_Finalize();
 
-  return 0;
+  if (rank == 0) {
+    if (correctOnAllRanks) {
+      logInfo() << "Mesh is correct";
+      return 0;
+    } else {
+      logInfo() << "Found at least one broken element, see above for more details.";
+      return 1;
+    }
+  }
 }
