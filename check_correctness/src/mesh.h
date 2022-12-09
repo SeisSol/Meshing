@@ -13,19 +13,19 @@ class Mesh {
   public:
   explicit Mesh(std::string const& fileName);
   ~Mesh() = default;
-  [[nodiscard]] unsigned int numVertices() const { return puml.vertices().size(); };
-  [[nodiscard]] unsigned int numElements() const { return puml.cells().size(); };
+  [[nodiscard]] std::size_t numVertices() const { return puml.vertices().size(); }
+  [[nodiscard]] std::size_t numElements() const { return puml.cells().size(); }
   [[nodiscard]] bool checkNeighbors() const;
 
   private:
   PUML::TETPUML puml;
-  std::string_view bcToString(int id) const {
+  std::string bcToString(int id) const {
     switch(id) {
-      case 0: return "regular";
-      case 1: return "free surface";
-      case 3: return "dynamic rupture";
-      case 5: return "absorbing";
-      default: return "";
+      case 0: return std::string("regular");
+      case 1: return std::string("free surface");
+      case 3: return std::string("dynamic rupture");
+      case 5: return std::string("absorbing");
+      default: return std::string("");
     }
   }
 
