@@ -22,7 +22,3 @@ mpirun -n 4 ./check_correctnes -m mesh.h5
   - if a face is a free-surface or an absorbing face, the neighbor *must not exist*.
 3. The program aborts, when the first face is found that breaks the rules above.
 4. If all elements are correct, the programm exits with a succes output.
-
-Note:
-Only regular (0), free-surface (101), dynamic-rupture (103) and absorbing (5) boundary conditions are considered.
-This does not work with special boundaries, like fault-tagging or the free-surface with gravity (yet).

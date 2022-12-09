@@ -51,15 +51,15 @@ bool Mesh::checkNeighbors() const {
     for (size_t side = 0; side < 4; side++) {
       const auto& face = puml.faces()[faceids[side]];
       const auto sideBC = decodeBC(side);
-      // if a face is a regular or a dr face, it has to have a neighbor on either this rank or somewhere else:
-      if (sideBC == 0 || sideBC == 3) {
+      // if a face is an internal face, it has to have a neighbor on either this rank or somewhere else:
+      if (bcToType(sideBC) == BCType::internal) {
         if (neighbors[side] < 0 && !face.isShared()) {
           logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighborig element doesn't exist";
           result = false;
         }
       }
-      // absorbing or free surface boundaries must not have neighbor elements:
-      else if (sideBC == 1 || sideBC == 5) {
+      // external boundaries must not have neighbor elements:
+      else if (bcToType(sideBC) == BCType::external) {
         if (neighbors[side] >= 0 || face.isShared()) {
           logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighborig element is not flagged -1";
           result = false;
@@ -67,7 +67,7 @@ bool Mesh::checkNeighbors() const {
       }
       // ignore unknown boundary conditions and warn
       else {
-        logWarning() << "Element" << cell.gid() << ", side" << side << " has a boundary condition, which I don't understand" << sideBC;
+        logWarning() << "Element" << cellIdAsInFile << ", side" << side << " has a boundary condition, which I don't understand" << sideBC;
       }
     }
   }

@@ -3,6 +3,7 @@
 
 #include <array>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -19,14 +20,32 @@ class Mesh {
 
   private:
   PUML::TETPUML puml;
-  std::string bcToString(int id) const {
-    switch(id) {
-      case 0: return std::string("regular");
-      case 1: return std::string("free surface");
-      case 3: return std::string("dynamic rupture");
-      case 5: return std::string("absorbing");
-      default: return std::string("");
+
+  enum class BCType {
+    internal, external, unknown
+  };
+
+  BCType bcToType(int id) const {
+    if (id == 0 || id == 3 || id > 64) {
+      return BCType::internal;
+    } else if (id == 1 || id == 5 || id == 6 || id == 6) {
+      return BCType::external;
+    } else {
+      return BCType::unknown;
     }
+  }
+
+  std::string bcToString(int id) const {
+    if (id == 0) { return std::string("regular"); }
+    else if (id == 1) { return std::string("free surface"); }
+    else if (id == 3) { return std::string("dynamic rupture"); }
+    else if (id == 5) { return std::string("absorbing"); }
+    else if (id == 6) { return std::string("periodic"); }
+    else if (id > 64) { 
+      std::stringstream s;
+      s << "fault-tagging (" << id << ")";
+      return s.str();
+    } else {return std::string(""); }
   }
 
 };
