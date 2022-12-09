@@ -38,7 +38,7 @@ bool Mesh::checkNeighbors() const {
   unsigned int faceids[4]{};
   int neighbors[4]{};
   // check all cells
-  for (size_t elemIdx = 0; elemIdx < numElements(); elemIdx++) {
+  for (size_t elemIdx = 0; elemIdx < this->numElements(); elemIdx++) {
     const auto& cell = puml.cells().at(elemIdx);
     const auto bndInfo = puml.cellData(1)[elemIdx];
     const auto cellIdAsInFile = puml.cellData(2)[elemIdx];
@@ -54,14 +54,14 @@ bool Mesh::checkNeighbors() const {
       // if a face is an internal face, it has to have a neighbor on either this rank or somewhere else:
       if (bcToType(sideBC) == BCType::internal) {
         if (neighbors[side] < 0 && !face.isShared()) {
-          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighborig element doesn't exist";
+          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighboring element doesn't exist";
           result = false;
         }
       }
-      // external boundaries must not have neighbor elements:
+      // external boundaries must not have neighboring elements:
       else if (bcToType(sideBC) == BCType::external) {
         if (neighbors[side] >= 0 || face.isShared()) {
-          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighborig element is not flagged -1";
+          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighboring element is not flagged -1";
           result = false;
         }
       }
