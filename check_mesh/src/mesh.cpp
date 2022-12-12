@@ -15,19 +15,17 @@ Mesh::Mesh(const std::string& fileName) {
   puml.addData((fileName + ":/group").c_str(), PUML::CELL);
   puml.addData((fileName + ":/boundary").c_str(), PUML::CELL);
   const auto numTotalCells = puml.numTotalCells();
-  std::vector<int> cellIdsAsInFile;
-  cellIdsAsInFile.reserve(numTotalCells);
-  std::iota(cellIdsAsInFile.begin(), cellIdsAsInFile.begin(), 0);
+  std::vector<int> cellIdsAsInFile(numTotalCells);
+  std::iota(cellIdsAsInFile.begin(), cellIdsAsInFile.end(), 0);
   puml.addData(cellIdsAsInFile.data(), numTotalCells, PUML::CELL);
   
   // Keep all cells on the same rank
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::size_t numPartitionCells = puml.numOriginalCells();
-  std::vector<int> partition;
-  partition.reserve(numPartitionCells);
+  std::vector<int> partition(numPartitionCells);
   for (std::size_t elemIdx = 0; elemIdx < numPartitionCells; elemIdx++) {
-    partition[elemIdx] = rank;
+    partition.at(elemIdx) = rank;
   }
   puml.partition(partition.data());
   puml.generateMesh();
