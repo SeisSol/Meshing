@@ -27,6 +27,7 @@ Internal faces are:
 * Regular
 * Dynamic Rupture
 * Dynamic Rupture with Fault Tagging
+
 External faces are:
 * Free Surface
 * Absorbing
