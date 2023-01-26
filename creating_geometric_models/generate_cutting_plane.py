@@ -2,6 +2,7 @@
 import pygmsh
 import argparse
 import numpy as np
+import Face
 
 parser = argparse.ArgumentParser(description="generate a meshed plane with pygmsh")
 parser.add_argument("output_file", help="filename of output file")
@@ -68,4 +69,9 @@ with pygmsh.occ.Geometry() as geom:
         [p0, p1, p2, p3],
     )
     mesh = geom.generate_mesh(dim=2)
-    mesh.write(args.output_file)
+    if args.output_file.split('.')[-1]=='ts':
+        # gocad ts format is not supported by meshio
+        newFace = Face.Face(vertex=mesh.points, connect=mesh.cells[1].data)
+        newFace.write(args.output_file)
+    else:
+        mesh.write(args.output_file)
