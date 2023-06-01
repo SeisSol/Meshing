@@ -64,7 +64,7 @@ void writeNEU(char const* filename, GMSH<DIM> const& msh) {
   strftime(datestring, sizeof(datestring), "%c", timeinfo);
   fprintf(file, "%s\n", datestring);
   fprintf(file, "     NUMNP     NELEM     NGRPS    NBSETS     NDFCD     NDFVL\n");
-  fprintf(file, " %9d %9d %9d %9d %9d %9d\n", msh.numVertices, msh.numElements, msh.materialGroups.size(), msh.boundaryConditions.size(), DIM, DIM);
+  fprintf(file, " %9d %9d %9d %9d %9d %9d\n", msh.numVertices, msh.numElements, static_cast<unsigned>(msh.materialGroups.size()), static_cast<unsigned>(msh.boundaryConditions.size()), DIM, DIM);
   fprintf(file, "ENDOFSECTION\n");
   
   // Vertices
@@ -92,7 +92,7 @@ void writeNEU(char const* filename, GMSH<DIM> const& msh) {
   // Material groups
   for (auto group = msh.materialGroups.cbegin(); group != msh.materialGroups.cend(); ++group) {
     fprintf(file, "       ELEMENT GROUP 2.0.0\n");
-    fprintf(file, "GROUP: %10d ELEMENTS: %10d MATERIAL: %10d NFLAGS: %10d\n", group->first, group->second.size(), 2, 1);
+    fprintf(file, "GROUP: %10d ELEMENTS: %10d MATERIAL: %10d NFLAGS: %10d\n", group->first, static_cast<unsigned>(group->second.size()), 2, 1);
     fprintf(file, "Material group %d\n", group->first);
     fprintf(file, "       0");
     for (unsigned gm = 0; gm < group->second.size(); ++gm) {
@@ -109,7 +109,7 @@ void writeNEU(char const* filename, GMSH<DIM> const& msh) {
   for (auto boundaryCondition = msh.boundaryConditions.cbegin(); boundaryCondition != msh.boundaryConditions.cend(); ++boundaryCondition) {
     fprintf(file, "       BOUNDARY CONDITIONS 2.0.0\n");
     // collect members in group
-    fprintf(file, "%32d%8d%8d%8d%8d\n", boundaryCondition->first, 1, boundaryCondition->second.size(), 0, 6);
+    fprintf(file, "%32d%8d%8d%8d%8d\n", boundaryCondition->first, 1, static_cast<unsigned>(boundaryCondition->second.size()), 0, 6);
     for (auto boundary = boundaryCondition->second.begin(); boundary < boundaryCondition->second.end(); ++boundary) {
       fprintf(file, "%10d %5d %5d\n", boundary->element+1, GambitInfo<DIM>::Type, boundary->side+1);
     }

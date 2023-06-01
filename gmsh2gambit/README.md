@@ -8,8 +8,9 @@ Build
 Using CMake (preferred)
 ```
 cmake
-make -j 4
+make -j 3
 ```
+(this assumes that UNIX Makefiles are the default build system for your CMake installation)
 
 Using scons (legacy)
 ```

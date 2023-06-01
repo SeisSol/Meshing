@@ -166,7 +166,7 @@ GMSH<DIM>::GMSH(char const* filename)
   in.close();
 
   // vertex to triangle map
-  std::vector<unsigned>* vertex2face = vertex2face = new std::vector<unsigned>[numVertices];  
+  std::vector<unsigned>* vertex2face = new std::vector<unsigned>[numVertices];  
   for (unsigned face = 0; face < numFaces; ++face) {
     for (unsigned node = 0; node < Face::NumNodes; ++node) {
       vertex2face[faces[face].nodes[node]].push_back(face);
