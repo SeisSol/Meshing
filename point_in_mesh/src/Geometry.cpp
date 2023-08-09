@@ -21,7 +21,7 @@ void geometry::PointChecker::setupElements(const reader::Mesh& mesh) {
 std::optional<int> geometry::PointChecker::pointInMesh(const Eigen::Vector3d& point) {
   std::optional<int> result = {};
 
-#pragma omp parallel for
+#pragma omp parallel for shared(result)
   for (size_t elementIdx = 0; elementIdx < elements.size(); elementIdx++) {
     if (elements[elementIdx].containsPoint(point)) {
       result = elementIdx;
