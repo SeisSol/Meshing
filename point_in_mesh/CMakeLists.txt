@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project(point_in_mesh LANGUAGES C CXX)
 
-set(LOG_LEVEL "info" CACHE STRING "Log level for the code")
-set_property(CACHE LOG_LEVEL PROPERTY STRINGS "debug" "info" "warning" "error")
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,7 +11,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
   message(STATUS "Set build type to Release as none was supplied.")
 endif()
-
 
 add_executable(point_in_mesh 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Geometry.cpp
@@ -31,7 +27,6 @@ set(HDF5_PREFER_PARALLEL False)
 find_package(HDF5 REQUIRED COMPONENTS C HL)
 target_include_directories(point_in_mesh PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(point_in_mesh PUBLIC ${HDF5_C_HL_LIBRARIES} ${HDF5_C_LIBRARIES})
-target_compile_definitions(point_in_mesh PUBLIC USE_HDF)
 
 if(HDF5_IS_PARALLEL)
   find_package(MPI REQUIRED)
@@ -39,22 +34,23 @@ if(HDF5_IS_PARALLEL)
   target_compile_definitions(point_in_mesh PUBLIC PARALLEL)
 endif()
 
-find_package(Eigen3 3.4 REQUIRED)
-target_link_libraries(point_in_mesh INTERFACE Eigen3::Eigen)
+find_package(OpenMP REQUIRED)
+target_link_libraries(point_in_mesh PUBLIC OpenMP::OpenMP_CXX)
 
-function(cast_log_level_to_int log_level_str log_level_int)
-  if (${log_level_str} STREQUAL "debug")
+find_package(Eigen3 3.4 REQUIRED)
+target_link_libraries(point_in_mesh PUBLIC Eigen3::Eigen)
+
+function(cast_build_type_to_int build_type log_level_int)
+  if (${build_type} STREQUAL "Debug")
     set(${log_level_int} 3 PARENT_SCOPE)
-  elseif (${log_level_str} STREQUAL "info")
+  elseif (${build_type} STREQUAL "RelWithDebInfo")
     set(${log_level_int} 2 PARENT_SCOPE)
-  elseif (${log_level_str} STREQUAL "warning")
-    set(${log_level_int} 1 PARENT_SCOPE)
-  elseif (${log_level_str} STREQUAL "error")
-    set(${log_level_int} 0 PARENT_SCOPE)
+  elseif (${build_type} STREQUAL "Release")
+    set(${log_level_int} 2 PARENT_SCOPE)
   endif()
 endfunction()
 
-cast_log_level_to_int(LOG_LEVEL LOG_LEVEL)
+cast_build_type_to_int(CMAKE_BUILD_TYPE LOG_LEVEL)
 target_compile_definitions(point_in_mesh PUBLIC LOG_LEVEL=${LOG_LEVEL})
 
 install(TARGETS point_in_mesh RUNTIME DESTINATION bin DESTINATION ${CMAKE_INSTALL_BINDIR})
