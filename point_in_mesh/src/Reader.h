@@ -10,8 +10,15 @@
 #include <vector>
 
 namespace reader {
+/*
+ * Wraps a PUML mesh
+ */
 class Mesh {
   public:
+  /*
+   * Initializes a PUML mesh from an hdf5 file.
+   * @param fileName mesh file name
+   */
   explicit Mesh(std::string const& fileName);
   int partitions;
   std::vector<int> elementSize;
@@ -21,6 +28,12 @@ class Mesh {
   std::vector<double> vertexCoordinates;
 };
 
+/*
+ * Reads a SeisSol receiver file (assumes 3 floating point values per row).
+ * Returns a Vector of the points.
+ * @param fileName receiver file name
+ * @return vector containing all receivers in the same order as in the file.
+ */
 std::vector<Eigen::Vector3d> readReceiverFile(std::string const& fileName);
 } // namespace reader
 

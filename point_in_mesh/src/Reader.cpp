@@ -8,27 +8,28 @@
 #include <PUML/PUML.h>
 #include <utils/logger.h>
 
-// #include <cstdlib>
-// #include <cmath>
-// #include <iostream>
-// #include <iomanip>
 #include <fstream>
-// #include <sstream>
 
+/*
+ * Reads a SeisSol receiver file (assumes 3 floating point values per row).
+ * Returns a Vector of the points.
+ * @param fileName receiver file name
+ * @return vector containing all receivers in the same order as in the file.
+ */
 std::vector<Eigen::Vector3d> reader::readReceiverFile(std::string const& fileName) {
   using Vector3d = Eigen::Vector3d;
   std::vector<Vector3d> locations;
-  std::ifstream in(fileName.c_str());
+  std::ifstream inStream(fileName.c_str());
   std::string line;
 
-  while (std::getline(in, line)) {
+  while (std::getline(inStream, line)) {
     std::istringstream iss(line);
-    Vector3d p;
+    Vector3d point;
     int coord = 0;
     while (coord < 3 && iss.good()) {
-      iss >> p(coord++);
+      iss >> point(coord++);
     }
-    locations.push_back(p);
+    locations.push_back(point);
     if (iss.bad()) {
       logError() << "An error occurred while reading the receiver file.";
     }
@@ -36,42 +37,6 @@ std::vector<Eigen::Vector3d> reader::readReceiverFile(std::string const& fileNam
 
   return locations;
 }
-
-// void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
-//   std::ofstream out(fileName.c_str());
-//   out << std::scientific << std::setprecision(16);
-//
-//   int failureCounter = 0;
-//   Point const* points = tree.points();
-//   std::vector<Point> sortedPoints(tree.numPoints());
-//   for (unsigned p = 0; p < tree.numPoints(); ++p) {
-//     sortedPoints[tree.index(p)] = points[p];
-//   }
-//   for (auto const& point : sortedPoints) {
-//     if (!std::isnan(point.z)) {
-//       out << point.x << " " << point.y << " " << point.z << std::endl;
-//     } else {
-//       std::cerr << "Warning: Did not find elevation for receiver at (" << point.x << ", " <<
-//       point.y << ")." << std::endl;
-//       ++failureCounter;
-//     }
-//   }
-//
-//   if (failureCounter > 0) {
-//     std::cerr << failureCounter << " points were not written due to missing elevation." <<
-//     std::endl;
-//   }
-// }
-//
-// #ifdef USE_NETCDF
-// void check_err(const int stat, const int line, const char *file) {
-//   if (stat != NC_NOERR) {
-//     fprintf(stderr,"line %d of %s: %s\n", line, file, nc_strerror(stat));
-//     fflush(stderr);
-//     exit(-1);
-//   }
-// }
-// #endif
 
 reader::Mesh::Mesh(std::string const& fileName) {
   PUML::TETPUML puml;
@@ -90,7 +55,7 @@ reader::Mesh::Mesh(std::string const& fileName) {
   elementSize[0] = nElements;
   vertexSize[0] = nVertex;
 
-  double* vertexCoordinate = new double[3];
+  auto* vertexCoordinate = new double[3];
   for (unsigned int i = 0; i < nVertex; i++) {
     vertexCoordinate = (double*)puml.originalVertices()[i];
     for (unsigned int j = 0; j < 3; j++) {
@@ -98,7 +63,7 @@ reader::Mesh::Mesh(std::string const& fileName) {
     }
   }
 
-  unsigned long* elementVertex = new unsigned long[4];
+  auto* elementVertex = new unsigned long[4];
   for (unsigned int i = 0; i < nElements; i++) {
     elementVertex = (unsigned long*)puml.originalCells()[i];
     for (unsigned int j = 0; j < 4; j++) {

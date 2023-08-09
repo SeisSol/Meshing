@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   auto receivers = reader::readReceiverFile(receiverFile);
   logInfo() << "Read" << receivers.size() << "receivers.";
 
-  reader::Mesh mesh(meshFile);
+  reader::Mesh const mesh(meshFile);
 
   geometry::PointChecker pointChecker(mesh);
 
@@ -35,8 +35,6 @@ int main(int argc, char** argv) {
                 << "in any mesh cell.";
     }
   }
-
-  // writeReceiverFile(tree, receiverOutputFile);
 
   return 0;
 }
