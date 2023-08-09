@@ -7,32 +7,31 @@
 
 #include "Reader.h"
 
+#include <Eigen/Dense>
 #include <array>
 #include <optional>
 #include <vector>
-#include <Eigen/Dense>
 
 namespace geometry {
-  class Element {
-    public:
-      Element(std::array<Eigen::Vector3d, 4> vertices);
-      bool containsPoint(const Eigen::Vector3d& point);
-    private:
-      std::array<Eigen::Vector3d, 4> vertices;
-      std::array<Eigen::Vector3d, 4> faceNormals;
-  };
+class Element {
+  public:
+  Element(std::array<Eigen::Vector3d, 4> vertices);
+  bool containsPoint(const Eigen::Vector3d& point);
 
-  class PointChecker {
-    public:
-      PointChecker(const reader::Mesh& mesh) {
-        setupElements(mesh);
-      }
-      std::optional<int> pointInMesh(const Eigen::Vector3d& point);
-    private:
-      std::vector<Element> elements;
-      void setupElements(const reader::Mesh& mesh);
-  };
-}
+  private:
+  std::array<Eigen::Vector3d, 4> vertices;
+  std::array<Eigen::Vector3d, 4> faceNormals;
+};
 
+class PointChecker {
+  public:
+  PointChecker(const reader::Mesh& mesh) { setupElements(mesh); }
+  std::optional<int> pointInMesh(const Eigen::Vector3d& point);
+
+  private:
+  std::vector<Element> elements;
+  void setupElements(const reader::Mesh& mesh);
+};
+} // namespace geometry
 
 #endif

@@ -5,23 +5,23 @@
 #ifndef READER_H_
 #define READER_H_
 
+#include <Eigen/Dense>
 #include <string>
 #include <vector>
-#include <Eigen/Dense>
 
 namespace reader {
-  class Mesh {
-    public:
-      explicit Mesh(std::string const& fileName);
-      int partitions;
-      std::vector<int> elementSize;
-      std::vector<int> vertexSize;
-      std::vector<int> elementBoundaries;
-      std::vector<int> elementVertices;
-      std::vector<double> vertexCoordinates;
-  };
+class Mesh {
+  public:
+  explicit Mesh(std::string const& fileName);
+  int partitions;
+  std::vector<int> elementSize;
+  std::vector<int> vertexSize;
+  std::vector<int> elementBoundaries;
+  std::vector<int> elementVertices;
+  std::vector<double> vertexCoordinates;
+};
 
-  std::vector<Eigen::Vector3d> readReceiverFile(std::string const& fileName);
-}
+std::vector<Eigen::Vector3d> readReceiverFile(std::string const& fileName);
+} // namespace reader
 
 #endif
