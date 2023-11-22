@@ -15,19 +15,19 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("input_file", help="input file (3 columns ascii x y z)")
 parser.add_argument(
-    "--edge_length_threshold",
+    "--max_edge_length",
     nargs=1,
     type=float,
     help="border triangles with edge length larger than the threshold will be removed",
 )
 parser.add_argument(
-    "--area_threshold",
+    "--min_area",
     nargs=1,
     type=float,
     help="border triangles with area lower than the threshold will be removed",
 )
 parser.add_argument(
-    "--aspect_ratio_threshold",
+    "--max_aspect_ratio",
     nargs=1,
     type=float,
     default=[7.0],
@@ -47,22 +47,18 @@ tri = Delaunay(points)
 mesh = trimesh.Trimesh(vertices=xyz, faces=tri.simplices)
 edge_lengths = mesh.edges_unique_length
 
-edge_length_threshold = (
+max_edge_length = (
     np.percentile(edge_lengths, 96)
-    if not args.edge_length_threshold
-    else args.edge_length_threshold[0]
+    if not args.max_edge_length
+    else args.max_edge_length[0]
 )
-print(f"using edge_length_threshold = {edge_length_threshold}")
+print(f"removing border triangles of max_edge_length > {max_edge_length}")
 
 triangle_areas = mesh.area_faces
-triangle_area_threshold = (
-    np.percentile(triangle_areas, 3)
-    if not args.area_threshold
-    else args.area_threshold[0]
-)
-print(f"using triangle_area_threshold = {triangle_area_threshold}")
+min_area = np.percentile(triangle_areas, 3) if not args.min_area else args.min_area[0]
+print(f"removing border triangles of area < {min_area}")
 
-print(f"using aspect_ratio_threshold = {args.aspect_ratio_threshold[0]}")
+print(f"removing border triangles of aspect ratio > {args.max_aspect_ratio[0]}")
 
 k = 0
 while True:
@@ -79,9 +75,9 @@ while True:
         edge_lengths[i] = np.max(edge_lengths3)
         aspect_ratio[i] = np.max(edge_lengths3) / np.min(edge_lengths3)
 
-    ar_condition = aspect_ratio > args.aspect_ratio_threshold[0]
-    length_condition = edge_lengths > edge_length_threshold
-    area_condition = triangle_areas < triangle_area_threshold
+    ar_condition = aspect_ratio > args.max_aspect_ratio[0]
+    length_condition = edge_lengths > max_edge_length
+    area_condition = triangle_areas < min_area
 
     combined_condition = np.logical_or(ar_condition, length_condition)
     combined_condition = np.logical_or(combined_condition, area_condition)
