@@ -87,8 +87,12 @@ while True:
     if len(index_faces) == 0:
         break
     mesh = mesh.submesh([~np.isin(np.arange(len(mesh.faces)), index_faces)])[0]
+    nAR, nlength, narea = [
+        np.sum(v) for v in [ar_condition, length_condition, area_condition]
+    ]
     print(
-        f"iteration {k}, {len(index_faces)} triangles removed,"
+        f"iteration {k}, {len(index_faces)} triangles removed"
+        f" based on AR: {nAR}, length: {nlength}, area {narea},"
         f" {len(mesh.faces)} remaining"
     )
     k = k + 1
