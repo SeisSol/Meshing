@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from sklearn.decomposition import PCA
 import numpy as np
 from scipy.spatial import Delaunay
