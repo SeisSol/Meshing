@@ -115,8 +115,8 @@ Mesh::Mesh(std::string const& fileName){
   puml.addData((fileName + ":/boundary").c_str(), PUML::CELL);
 
 
-  int nElements = puml.numOriginalCells();
-  int nVertex = puml.numOriginalVertices();
+  size_t nElements = puml.numOriginalCells();
+  size_t nVertex = puml.numOriginalVertices();
   elementVertices = new int[nElements*4];
   vertexCoordinates = new double[nVertex*3];
   elementBoundaries = new int[nElements*4];
