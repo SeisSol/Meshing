@@ -6,19 +6,54 @@ import argparse
 import os
 
 
-def remove_duplicates(geom, connect, Bc, tol=1e-4):
-    """sort geom array and reindex connect array to match the new geom array"""
-    import pymesh
+def remove_unused_nodes(xyz, connect):
+    # Step 1: Create a list of unique nodes present in the connectivity array
+    unique_nodes = list(set(connect.flatten()))
+    # Step 2: Create a new geometry array with only the vertices present in the mesh
+    new_geometry = xyz[unique_nodes]
+    # Step 3: Renumber the connectivity array based on the new vertex indices
+    node_map = {node: i for i, node in enumerate(unique_nodes)}
+    new_connectivity = np.array([[node_map[v] for v in tri] for tri in connect])
+    return new_geometry, new_connectivity
 
-    nv = geom.shape[0]
-    geom, connect, inf = pymesh.remove_duplicated_vertices_raw(geom, connect)
-    geom, connect, inf = pymesh.remove_duplicated_faces_raw(geom, connect)
-    ori_face_index = inf["ori_face_index"]
-    BC = BC[ori_face_index]
-    return geom, connect, BC
+
+def remove_duplicate_nodes(points, tolerance=1e-5):
+    # Round the points to a certain precision to identify duplicates
+    rounded_points = np.round(points / tolerance).astype(np.int64)
+
+    # Find unique points and their corresponding indices
+    _, unique_indices, inverse_indices = np.unique(
+        rounded_points, axis=0, return_index=True, return_inverse=True
+    )
+
+    # Select the unique points
+    unique_points = points[unique_indices]
+
+    return unique_points, inverse_indices
 
 
-def ReadHdf5PosixForBoundaryPlotting(filename):
+def remove_duplicate_triangles(triangles, triangle_data):
+    # Sort the vertices of each triangle to ensure consistent ordering
+    sorted_triangles = np.sort(triangles, axis=1)
+
+    # Find unique triangles
+    _, unique_indices = np.unique(sorted_triangles, axis=0, return_index=True)
+    # Select the unique triangles and their associated data
+    unique_triangles = triangles[unique_indices]
+    unique_triangle_data = triangle_data[unique_indices]
+
+    return unique_triangles, unique_triangle_data
+
+
+def remove_duplicate_nodes_and_triangles(xyz, connect, BC):
+    xyz, inverse_indices = remove_duplicate_nodes(xyz)
+    # Update triangles to use the new node indices
+    connect = inverse_indices[connect]
+    connect, BC = remove_duplicate_triangles(connect, BC)
+    return xyz, connect, BC
+
+
+def readHdf5PosixForBoundaryPlotting(filename):
     sx = seissolxdmf.seissolxdmf(filename)
     xyz = sx.ReadGeometry()
     tetra = sx.ReadConnect()
@@ -65,14 +100,16 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
             BC[0, currentindex] = boundaryFace[tetraId[idBound]]
             currentindex = currentindex + 1
     print(np.unique(BC))
+    xyz, connect = remove_unused_nodes(xyz, connect)
+    xyz, connect, BC = remove_duplicate_nodes_and_triangles(xyz, connect, BC[0])
     prefix, ext = os.path.splitext(os.path.basename(args.filename))
-    # xyz, connect, BC = remove_duplicates(xyz, connect, BC, tol=1e-4)
+
     sBC = "BC" if args.BC != "faults" else "fault-tag"
     sxw.write(
         f"{prefix}_bc_{args.BC}",
         xyz,
         connect,
-        {"BC": BC},
+        {sBC: BC},
         {},
         reduce_precision=True,
         backend="hdf5",
@@ -113,4 +150,4 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-ReadHdf5PosixForBoundaryPlotting(args.filename)
+readHdf5PosixForBoundaryPlotting(args.filename)
