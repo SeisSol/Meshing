@@ -1,61 +1,20 @@
 #!/usr/bin/env python3
 import seissolxdmf
+import seissolxdmfwriter as sxw
 import numpy as np
 import argparse
 import os
 
-def CreateXdmf(fn, nNodes, ntriangles, aDataName):
-   xdmf="""<?xml version="1.0" ?>
-<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
-<Xdmf Version="2.0">
- <Domain>
-  <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
-   <Grid Name="step_000000000000" GridType="Uniform"><!-- mesh id: 0, mesh step: 0 -->
-    <Topology TopologyType="Triangle" NumberOfElements="%d">
-     <DataItem NumberType="Int" Precision="8" Format="HDF" Dimensions="%d 3">%s.h5:/mesh0/connect</DataItem>
-    </Topology>
-    <Geometry name="geo" GeometryType="XYZ" NumberOfElements="%d">
-     <DataItem NumberType="Float" Precision="8" Format="HDF" Dimensions="%d 3">%s.h5:/mesh0/geometry</DataItem>
-    </Geometry>
-    <Time Value="0"/>""" %(ntriangles, ntriangles, fn, nNodes, nNodes, fn)
+def remove_duplicates(geom, connect, Bc, tol=1e-4):
+    """sort geom array and reindex connect array to match the new geom array"""
+    import pymesh
 
-   for dataName in aDataName:
-      xdmf=xdmf + """
-    <Attribute Name="%s" Center="Cell">
-     <DataItem ItemType="HyperSlab" Dimensions="%d">
-      <DataItem NumberType="UInt" Precision="4" Format="XML" Dimensions="3 2">0 0 1 1 1 %d</DataItem>
-      <DataItem NumberType="Float" Precision="8" Format="HDF" Dimensions="1 %d">%s.h5:/mesh0/%s</DataItem>
-     </DataItem>
-    </Attribute>""" % (dataName, ntriangles, ntriangles, ntriangles,fn,dataName)
-
-   xdmf=xdmf + """
-   </Grid>
-  </Grid>
- </Domain>
-</Xdmf>
-"""
-   fid=open(fn+'.xdmf','w')
-   fid.write(xdmf)
-   fid.close()
-
-def write_xdmfh5(fname, aDataName, xyz, connect, BC):
-   nNodes=xyz.shape[0]
-   ntriangles = connect.shape[0]
-   CreateXdmf(fname, nNodes, ntriangles, aDataName)
-   #Write h5 file
-   import h5py
-   h5f = h5py.File(fname+'.h5','w')
-   h5f.create_dataset('mesh0/connect', (ntriangles,3), dtype='i8')
-   h5f['mesh0/connect'][:,:] = connect[:,:]
-   h5f.create_dataset('mesh0/geometry', xyz.shape, dtype='d')
-   h5f['mesh0/geometry'][:,:] = xyz[:,:]
-   for dataName in aDataName:
-     hdname = "mesh0/"+dataName
-     h5f.create_dataset(hdname, (1, ntriangles), dtype='d')
-     h5f[hdname][0,:] = eval(dataName)[:]
-   h5f.close()
-   print ("done writing %s.xdmf" %fname)
-
+    nv = geom.shape[0]
+    geom, connect, inf = pymesh.remove_duplicated_vertices_raw(geom, connect)
+    geom, connect, inf = pymesh.remove_duplicated_faces_raw(geom, connect)
+    ori_face_index = inf['ori_face_index']
+    BC = BC[ori_face_index]
+    return geom, connect, BC
 
 
 def ReadHdf5PosixForBoundaryPlotting(filename):
@@ -70,6 +29,9 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
       boundaryFace = (boundary >> (faceId*8)) & 0xFF;
       if SufaceId==0:
          tetraId = np.where(boundaryFace>0)[0]
+      elif SufaceId==-1:
+         is_fault = np.invert(np.isin(boundaryFace, [0,1,5]))
+         tetraId = np.where(is_fault)[0]
       else:
          tetraId = np.where(boundaryFace==SufaceId)[0]
       NS = NS + len(tetraId)
@@ -85,6 +47,9 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
       boundaryFace = (boundary >> (faceId*8)) & 0xFF;
       if SufaceId==0:
          tetraId = np.where(boundaryFace>0)[0]
+      elif SufaceId==-1:
+         is_fault = np.invert(np.isin(boundaryFace, [0,1,5]))
+         tetraId = np.where(is_fault)[0]
       else:
          tetraId = np.where(boundaryFace==SufaceId)[0]
       for idBound in range(0, len(tetraId)):
@@ -92,11 +57,19 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
           connect[currentindex,:] = trinodes
           BC[0,currentindex] = boundaryFace[tetraId[idBound]]
           currentindex = currentindex +1
-
+   print(np.unique(BC))
    aDataName = ['BC']
-   prefix, ext = os.path.splitext(args.filename)
-   fn = prefix+'_bc%d' %(SufaceId)
-   write_xdmfh5(fn, aDataName, xyz, connect, BC)
+   prefix, ext = os.path.splitext(os.path.basename(args.filename))
+   #xyz, connect, BC = remove_duplicates(xyz, connect, BC, tol=1e-4)
+   sxw.write(
+        f"{prefix}_bc{SufaceId}",
+        xyz,
+        connect,
+        {"BC": BC},
+        {},
+        reduce_precision=True,
+        backend="hdf5",
+    )
 
 parser = argparse.ArgumentParser(description='Read hdf5 mesh and create a xdmf/h5 file containing the BC surfaces')
 parser.add_argument('filename', help='fault output filename (xdmf), or SeisSol netcdf (nc) or ts (Gocad)')
