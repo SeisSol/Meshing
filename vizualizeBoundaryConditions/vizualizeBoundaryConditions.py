@@ -71,9 +71,14 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
         backend="hdf5",
     )
 
-parser = argparse.ArgumentParser(description='Read hdf5 mesh and create a xdmf/h5 file containing the BC surfaces')
-parser.add_argument('filename', help='fault output filename (xdmf), or SeisSol netcdf (nc) or ts (Gocad)')
-parser.add_argument('BC', help='1: free surface, 3:dynamic rupture 5:absorbing 0:all')
+parser = argparse.ArgumentParser(
+    description="Read a PUML mesh and create a xdmf/h5 file containing the surface boundary mesh"
+)
+parser.add_argument(
+    "filename",
+    help="PUML mesh",
+)
+parser.add_argument("BC", help="1: free surface, 3:dynamic rupture 5:absorbing 0:all")
 args = parser.parse_args()
 
 ReadHdf5PosixForBoundaryPlotting(args.filename)
