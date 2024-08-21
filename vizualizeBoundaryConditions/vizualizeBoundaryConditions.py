@@ -53,7 +53,7 @@ def remove_duplicate_nodes_and_triangles(xyz, connect, BC):
     return xyz, connect, BC
 
 
-def readHdf5PosixForBoundaryPlotting(filename):
+def generate_boundary_file(filename, iBC):
     sx = seissolxdmf.seissolxdmf(filename)
     xyz = sx.ReadGeometry()
     tetra = sx.ReadConnect()
@@ -70,17 +70,15 @@ def readHdf5PosixForBoundaryPlotting(filename):
         else:
             return np.where(boundaryFace == BC)[0]
 
-    def compute_output_mesh_size(boundary):
+    def compute_output_mesh_size(boundary, iBC):
         NS = 0
         for faceId in range(0, 4):
-            tetraId = get_tetras_with_passing_boundary_condition(
-                boundary, faceId, args.BC
-            )
+            tetraId = get_tetras_with_passing_boundary_condition(boundary, faceId, iBC)
             NS = NS + len(tetraId)
         assert NS != 0
         return NS
 
-    NS = compute_output_mesh_size(boundary)
+    NS = compute_output_mesh_size(boundary, iBC)
     connect = np.zeros((NS, 3), dtype=int)
     BC = np.zeros((1, NS))
 
@@ -93,7 +91,7 @@ def readHdf5PosixForBoundaryPlotting(filename):
     currentindex = 0
     for faceId in range(0, 4):
         boundaryFace = (boundary >> (faceId * 8)) & 0xFF
-        tetraId = get_tetras_with_passing_boundary_condition(boundary, faceId, args.BC)
+        tetraId = get_tetras_with_passing_boundary_condition(boundary, faceId, iBC)
         for idBound in range(0, len(tetraId)):
             trinodes = tetra[tetraId[idBound], s_vert[faceId, :]]
             connect[currentindex, :] = trinodes
@@ -102,11 +100,11 @@ def readHdf5PosixForBoundaryPlotting(filename):
     print(np.unique(BC))
     xyz, connect = remove_unused_nodes(xyz, connect)
     xyz, connect, BC = remove_duplicate_nodes_and_triangles(xyz, connect, BC[0])
-    prefix, ext = os.path.splitext(os.path.basename(args.filename))
+    prefix, ext = os.path.splitext(os.path.basename(filename))
 
-    sBC = "BC" if args.BC != "faults" else "fault-tag"
+    sBC = "BC" if iBC != "faults" else "fault-tag"
     sxw.write(
-        f"{prefix}_bc_{args.BC}",
+        f"{prefix}_bc_{iBC}",
         xyz,
         connect,
         {sBC: BC},
@@ -135,19 +133,20 @@ def custom_choice(value):
         )
 
 
-parser = argparse.ArgumentParser(
-    description="Read a PUML mesh and create a xdmf/h5 file containing the surface boundary mesh"
-)
-parser.add_argument(
-    "filename",
-    help="PUML mesh",
-)
-parser.add_argument(
-    "BC",
-    type=custom_choice,
-    help="boundary condition can be 'all', 'free-surface', 'faults', 'absorbing' or an integer.",
-)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Read a PUML mesh and create a xdmf/h5 file containing the surface boundary mesh"
+    )
+    parser.add_argument(
+        "filename",
+        help="PUML mesh",
+    )
+    parser.add_argument(
+        "BC",
+        type=custom_choice,
+        help="boundary condition can be 'all', 'free-surface', 'faults', 'absorbing' or an integer.",
+    )
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-readHdf5PosixForBoundaryPlotting(args.filename)
+    generate_boundary_file(args.filename, args.BC)
