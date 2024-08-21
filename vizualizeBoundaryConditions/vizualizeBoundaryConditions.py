@@ -67,7 +67,7 @@ def ReadHdf5PosixForBoundaryPlotting(filename):
     print(np.unique(BC))
     prefix, ext = os.path.splitext(os.path.basename(args.filename))
     # xyz, connect, BC = remove_duplicates(xyz, connect, BC, tol=1e-4)
-    sBC = "BC" if BC != "faults" else "fault-tag"
+    sBC = "BC" if args.BC != "faults" else "fault-tag"
     sxw.write(
         f"{prefix}_bc_{args.BC}",
         xyz,
