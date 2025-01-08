@@ -104,21 +104,22 @@ struct Action {
     faceDist = faceNormal[0] * vertices[0].coords[0] + faceNormal[1] * vertices[0].coords[1] + faceNormal[2] * vertices[0].coords[2];
   }
   
-  double operator()(Point& receiver) {
+  void operator()(Receiver& receiver) {
     bool inside = true;
     for (unsigned side = 0; side < 3; ++side) {
-      inside = inside && (normals[side][0] * receiver.x + normals[side][1] * receiver.y <= dist[side]);
+      inside = inside && (normals[side][0] * receiver.point.x + normals[side][1] * receiver.point.y <= dist[side]);
     }
     if (inside) {
+      receiver.found = true;
       double local_depth = 0.0;
-      if (!std::isnan(receiver.z)) {
-        local_depth = std::max(depth, std::fabs(receiver.z));
+      if (!std::isnan(receiver.point.z)) {
+        local_depth = std::max(depth, std::fabs(receiver.point.z));
       }
-      receiver.z = (faceDist - faceNormal[0] * receiver.x - faceNormal[1] * receiver.y) / faceNormal[2];
+      receiver.point.z = (faceDist - faceNormal[0] * receiver.point.x - faceNormal[1] * receiver.point.y) / faceNormal[2];
       if (faceNormal[2] >= 0) {
-        receiver.z -= local_depth;
+        receiver.point.z -= local_depth;
       } else {
-        receiver.z += local_depth;
+        receiver.point.z += local_depth;
       }
     }
   }

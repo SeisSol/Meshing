@@ -7,31 +7,29 @@
 KDTree::KDTree(std::vector<Point> const& points, int maxLeafSize)
 	: p(2), maxLeafN(maxLeafSize)
 {	
-	int n = points.size();
+	const auto n = points.size();
 	
 	// Copy data and change row-major to column-major storage.
-	data = new Point[n];
-	memcpy(data, points.data(), n * sizeof(Point));
+	data.resize(n);
+	for (std::size_t i = 0; i < n; ++i) {
+		data[i].point.x = points[i].x;
+		data[i].point.y = points[i].y;
+		data[i].point.z = points[i].z;
+		data[i].found = false;
+	}
 	
-	idx = new int[n];
+	idx.resize(n);
 	for (int i = 0; i < n; ++i) {
 		idx[i] = i;
 	}
 
 	int maxHeight = 1 + ceil(log2(n / static_cast<double>(maxLeafN)));
 	int maxNodes = (1 << maxHeight) - 1;
-	nodes = new Node[maxNodes];
+	nodes.resize(maxNodes);
 	nodes[0].start = 0;
 	nodes[0].n = n;
 	
 	buildTree(0, 0);
-}
-
-KDTree::~KDTree()
-{
-	delete[] data;
-	delete[] idx;
-	delete[] nodes;
 }
 
 void KDTree::swap(int i, int j)
@@ -44,10 +42,10 @@ void KDTree::swap(int i, int j)
 
 int KDTree::partition(int left, int right, int pivotIdx, int splitdim)
 {
-	double pivot = data[pivotIdx].coords[splitdim];
+	double pivot = data[pivotIdx].point.coords[splitdim];
 	int st = left;
 	for (int i = left; i < right; ++i) {
-		if (data[i].coords[splitdim] < pivot) {
+		if (data[i].point.coords[splitdim] < pivot) {
 			swap(st, i);
 			++st;
 		}
@@ -79,7 +77,7 @@ void KDTree::buildTree(int k, int splitdim)
 				}
 			}
 		}
-		node.pivot = data[median_idx].coords[splitdim];
+		node.pivot = data[median_idx].point.coords[splitdim];
 
 		Node& left = nodes[leftChild(k)];
 		left.start = node.start;

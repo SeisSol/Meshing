@@ -78,16 +78,16 @@ void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
   out << std::scientific << std::setprecision(16);
   
   int failureCounter = 0;
-  Point const* points = tree.points();
-  std::vector<Point> sortedPoints(tree.numPoints());
+  const auto& receivers = tree.points();
+  std::vector<Receiver> sortedPoints(receivers.size());
   for (unsigned p = 0; p < tree.numPoints(); ++p) {
-    sortedPoints[tree.index(p)] = points[p];
+    sortedPoints[tree.index(p)] = receivers[p];
   }
-  for (auto const& point : sortedPoints) {
-    if (!std::isnan(point.z)) {
-      out << point.x << " " << point.y << " " << point.z << std::endl;
+  for (auto const& receiver : sortedPoints) {
+    if (!std::isnan(receiver.point.z) && receiver.found) {
+      out << receiver.point.x << " " << receiver.point.y << " " << receiver.point.z << std::endl;
     } else {
-      std::cerr << "Warning: Did not find elevation for receiver at (" << point.x << ", " << point.y << ")." << std::endl;
+      std::cerr << "Warning: Did not find elevation for receiver at (" << receiver.point.x << ", " << receiver.point.y << ")." << std::endl;
       ++failureCounter;
     }
   }
