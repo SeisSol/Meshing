@@ -51,18 +51,22 @@ union Point {
   };
 };
 
+struct Receiver {
+	Point point;
+	bool found{false};
+};
+
 class KDTree {
 public:
 	KDTree(std::vector<Point> const& points, int maxLeafSize);
-	~KDTree();
 	
 	template<typename Support, typename Action>
-	void search(Support const& support, Action& action) const
+	void search(Support const& support, Action& action)
 	{
 		searchTree<Support, Action>(0, support, action);
 	}
 	
-	inline Point const* points() const { return data; }
+	inline std::vector<Receiver> points() const { return data; }
 	inline int index(int r) const { return idx[r]; }
   inline int numPoints() const { return nodes[0].n;}
 
@@ -78,28 +82,28 @@ private:
 		int splitdim;
 		bool isLeaf;
 	};
-	Node* nodes;
+	std::vector<Node> nodes;
 	
 	void swap(int i, int j);
 	int partition(int left, int right, int pivotIdx, int splitdim);
 	void buildTree(int k, int splitdim);
 	
 	template<typename Support, typename Action>
-	void searchTree(int k, Support const& support, Action& action) const;
+	void searchTree(int k, Support const& support, Action& action);
 
-	Point* data;
-	int* idx;
+	std::vector<Receiver> data;
+	std::vector<int> idx;
 	int p;
 	int maxLeafN;
 };
 
 template<typename Support, typename Action>
-void KDTree::searchTree(int k, Support const& support, Action& action) const
+void KDTree::searchTree(int k, Support const& support, Action& action)
 {
-	Node& node = nodes[k];
+	const auto& node = nodes[k];
 	if (node.isLeaf) {
 		for (int i = node.start; i < node.start + node.n; ++i) {
-      action(data[i]);
+      		action(data[i]);
 		}
 	} else {
 		if (support(node.splitdim, 0) <= node.pivot) {

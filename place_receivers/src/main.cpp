@@ -64,6 +64,11 @@ int main(int argc, char** argv)
 
   std::vector<Point> receivers = readReceiverFile(receiverFile);
   std::cout << "Read " << receivers.size() << " receivers." << std::endl;
+  if (receivers.empty()) {
+    std::cout << "No receivers found; nothing to do. Quitting." << std::endl;
+    return 0;
+  }
+
   KDTree tree(receivers, 1);
   
   Mesh mesh(meshFile);
