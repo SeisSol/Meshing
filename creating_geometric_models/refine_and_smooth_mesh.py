@@ -29,7 +29,6 @@ parser.add_argument(
     nargs=1,
     metavar=("mesh_size"),
     type=float,
-    required=True,
     help="remesh first the surface with pygalmesh",
 )
 
