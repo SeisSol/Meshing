@@ -37,6 +37,7 @@ enum class BoundaryFormat {
 };
 
 // cf. https://en.wikipedia.org/wiki/Schl%C3%A4fli_orthoscheme
+// (make sure that all of the tetrahedra have a positive orientation)
 static std::array<std::array<std::array<int, 3>, 4>, 6> cube2tet = {
     std::array<std::array<int, 3>, 4>{
         std::array<int, 3>{0,0,0},
@@ -57,26 +58,27 @@ static std::array<std::array<std::array<int, 3>, 4>, 6> cube2tet = {
         std::array<int, 3>{1,0,1},
     },
     std::array<std::array<int, 3>, 4>{
-        std::array<int, 3>{1,1,1},
         std::array<int, 3>{0,1,1},
+        std::array<int, 3>{1,1,1},
         std::array<int, 3>{1,0,1},
         std::array<int, 3>{1,0,0},
     },
     std::array<std::array<int, 3>, 4>{
-        std::array<int, 3>{1,1,1},
         std::array<int, 3>{0,1,1},
+        std::array<int, 3>{1,1,1},
         std::array<int, 3>{1,0,0},
         std::array<int, 3>{1,1,0},
     },
     std::array<std::array<int, 3>, 4>{
-        std::array<int, 3>{0,1,1},
         std::array<int, 3>{1,0,0},
+        std::array<int, 3>{0,1,1},
         std::array<int, 3>{1,1,0},
         std::array<int, 3>{0,1,0},
     },
 };
 
 // I don't know why this order works. But it seems like to does.
+// (it's basically the same as the face ordering in PUML)
 static std::array<int, 4> faceorder = { 3,2,0,1 };
 
 static std::array<std::array<std::array<int, 3>, 4>, 6> tet2face(const std::array<std::array<std::array<int, 3>, 4>, 6>& data) {
