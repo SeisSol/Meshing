@@ -632,11 +632,24 @@ int main(int argc, char** argv) {
     hid_t attrSpace = hw(H5Screate(H5S_SCALAR));
     hid_t attrType = hw(H5Tcopy(H5T_C_S1));
     hw(H5Tset_size(attrType, H5T_VARIABLE));
-    hid_t attrBoundary = hw(
-        H5Acreate(fileHandle, "boundary-format", attrType, attrSpace, H5P_DEFAULT, H5P_DEFAULT));
-    const void* stringData = boundaryRaw.data();
-    hw(H5Awrite(attrBoundary, attrType, &stringData));
-    hw(H5Aclose(attrBoundary));
+
+    {
+        hid_t attrBoundary = hw(
+            H5Acreate(fileHandle, "boundary-format", attrType, attrSpace, H5P_DEFAULT, H5P_DEFAULT));
+        const void* stringData = boundaryRaw.data();
+        hw(H5Awrite(attrBoundary, attrType, &stringData));
+        hw(H5Aclose(attrBoundary));
+    }
+
+    {
+        hid_t attrTopology = hw(
+            H5Acreate(fileHandle, "topology-format", attrType, attrSpace, H5P_DEFAULT, H5P_DEFAULT));
+        const std::string periodicityRaw = periodic ? "identify-vertex" : "geometric";
+        const void* stringData = periodicityRaw.data();
+        hw(H5Awrite(attrTopology, attrType, &stringData));
+        hw(H5Aclose(attrTopology));
+    }
+
     hw(H5Sclose(attrSpace));
     hw(H5Tclose(attrType));
 
