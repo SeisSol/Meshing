@@ -1,14 +1,23 @@
 from collections import defaultdict
 import numpy as np
+from tqdm import tqdm, trange
+import pyvista as pv
 
 
 class Face:
     def __init__(self, vertex, connect):
-
         self.connect = connect
         self.vertex = vertex
         self.local_vid_lookup = {}
         self.ntriangles = self.connect.shape[0]
+
+    @classmethod
+    def from_pyvista(self, fname):
+        mesh = pv.read(fname)
+        mesh = mesh.clean(tolerance=0.1)
+        faces = mesh.faces.reshape((-1, 4))[:, 1:]
+        myFace = Face(mesh.points, faces)
+        return myFace
 
     @classmethod
     def from_ts(self, fid):
@@ -72,7 +81,9 @@ class Face:
 
         transformer = Transformer.from_crs("epsg:4326", sProj, always_xy=True)
         print("projecting the node coordinates")
-        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
+        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(
+            self.vertex[:, 0], self.vertex[:, 1]
+        )
         print(self.vertex)
         print("done projecting")
 
@@ -82,7 +93,9 @@ class Face:
 
         transformer = Transformer.from_crs(sProj, "epsg:4326", always_xy=True)
         print("convert the node coordinates to lat/lon")
-        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(self.vertex[:, 0], self.vertex[:, 1])
+        self.vertex[:, 0], self.vertex[:, 1] = transformer.transform(
+            self.vertex[:, 0], self.vertex[:, 1]
+        )
         print(self.vertex)
         print("done converting")
 
@@ -109,11 +122,15 @@ class Face:
         mesh = trimesh.Trimesh(self.vertex, self.connect)
         assert depth_min > 0
         # list vertex of the face boundary
-        unique_edges = mesh.edges[trimesh.grouping.group_rows(mesh.edges_sorted, require_count=1)]
-        if len(unique_edges)==0:
-            raise ValueError("the surface mesh has no boundary edges. "
+        unique_edges = mesh.edges[
+            trimesh.grouping.group_rows(mesh.edges_sorted, require_count=1)
+        ]
+        if len(unique_edges) == 0:
+            raise ValueError(
+                "the surface mesh has no boundary edges. "
                 "This means you extracted an incorrect set of surfaces "
-                "(the surface mesh of a closed region).")
+                "(the surface mesh of a closed region)."
+            )
         boundary_vid = np.array(list(set(list(unique_edges.flatten()))))
         # mask shallow water region
         shallow = np.where(mesh.vertices[:, 2] > -depth_min)
@@ -142,17 +159,38 @@ class Face:
 
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
-            fout.write("GOCAD TSURF 1\nHEADER {\nname:%s\nborder: true\nmesh: false\n*border*bstone: true\n}\nTFACE\n" % (fname))
-            for ivx in vertex_id_2_write:
-                fout.write("VRTX %s %s %s %s\n" % (ivx, self.vertex[ivx - 1, 0], self.vertex[ivx - 1, 1], self.vertex[ivx - 1, 2]))
+            fout.write(
+                "GOCAD TSURF 1\nHEADER {\nname:%s\nborder: true\nmesh: false\n*border*bstone: true\n}\nTFACE\n"
+                % (fname)
+            )
+            for ivx in tqdm(vertex_id_2_write):
+                fout.write(
+                    "VRTX %s %s %s %s\n"
+                    % (
+                        ivx,
+                        self.vertex[ivx - 1, 0],
+                        self.vertex[ivx - 1, 1],
+                        self.vertex[ivx - 1, 2],
+                    )
+                )
 
-            for i in range(self.ntriangles):
-                fout.write("TRGL %d %d %d\n" % (self.connect[i, 0] + 1, self.connect[i, 1] + 1, self.connect[i, 2] + 1))
+            for i in trange(self.ntriangles):
+                fout.write(
+                    "TRGL %d %d %d\n"
+                    % (
+                        self.connect[i, 0] + 1,
+                        self.connect[i, 1] + 1,
+                        self.connect[i, 2] + 1,
+                    )
+                )
             fout.write("END\n")
 
     def __computeNormal(self):
         "compute efficiently the normals"
-        normal = np.cross(self.vertex[self.connect[:, 1], :] - self.vertex[self.connect[:, 0], :], self.vertex[self.connect[:, 2], :] - self.vertex[self.connect[:, 0], :]).astype(float)
+        normal = np.cross(
+            self.vertex[self.connect[:, 1], :] - self.vertex[self.connect[:, 0], :],
+            self.vertex[self.connect[:, 2], :] - self.vertex[self.connect[:, 0], :],
+        ).astype(float)
         norm = np.linalg.norm(normal, axis=1)
         self.normal = np.divide(normal, norm[:, None])
 
@@ -161,11 +199,14 @@ class Face:
         mode = "a" if append else "w"
         with open(fname, mode) as fout:
             fout.write(f"solid {fname}\n")
-            for k in range(self.ntriangles):
+            for k in trange(self.ntriangles):
                 fout.write("facet normal %e %e %e\n" % tuple(self.normal[k, :]))
                 fout.write("outer loop\n")
                 for i in range(0, 3):
-                    fout.write("vertex %.10e %.10e %.10e\n" % tuple(self.vertex[self.connect[k, i], :]))
+                    fout.write(
+                        "vertex %.10e %.10e %.10e\n"
+                        % tuple(self.vertex[self.connect[k, i], :])
+                    )
                 fout.write("endloop\n")
                 fout.write("endfacet\n")
             fout.write(f"endsolid {fname}\n")
@@ -177,7 +218,7 @@ class Face:
         fout.seek(80)
         fout.write(struct.pack("<L", self.ntriangles))
         self.__computeNormal()
-        for k in range(self.ntriangles):
+        for k in trange(self.ntriangles):
             fout.write(struct.pack("<3f", *self.normal[k, :]))
             for i in range(0, 3):
                 fout.write(struct.pack("<3f", *self.vertex[self.connect[k, i], :]))
