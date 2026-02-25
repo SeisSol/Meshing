@@ -111,7 +111,7 @@ struct Action {
     }
     if (inside) {
       receiver.found = true;
-      double local_depth = 0.0;
+      double local_depth = depth;
       if (!std::isnan(receiver.point.z)) {
         local_depth = std::max(depth, std::fabs(receiver.point.z));
       }
