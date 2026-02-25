@@ -27,7 +27,7 @@ elseif("${LOG_LEVEL}" STREQUAL "error")
 endif()
 
 #build and link libraries and executable
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../../../cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 find_package(NetCDF REQUIRED)
 target_include_directories(cubeGenerator PUBLIC ${NetCDF_INCLUDE_DIRS})
 target_link_libraries(cubeGenerator PUBLIC ${NetCDF_LIBRARY})
@@ -55,4 +55,4 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp -Wall -Wextra -pedantic")
 endif()
 
-target_include_directories(cubeGenerator PUBLIC "${PROJECT_SOURCE_DIR}/../../../submodules")
+target_include_directories(cubeGenerator PUBLIC "${PROJECT_SOURCE_DIR}/../../submodules")

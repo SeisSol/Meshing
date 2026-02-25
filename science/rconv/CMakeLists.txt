@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7)
 
 project(SeisSol-RConv LANGUAGES C CXX)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../../../cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,7 +39,7 @@ add_executable(SeisSol-rconv
   src/SRF.cpp)
 
 target_include_directories(SeisSol-rconv PUBLIC src
-   "${CMAKE_CURRENT_SOURCE_DIR}/../../../submodules/"
+   "${CMAKE_CURRENT_SOURCE_DIR}/../../submodules/"
 )
 
 target_link_libraries(SeisSol-rconv PUBLIC Eigen3::Eigen)
