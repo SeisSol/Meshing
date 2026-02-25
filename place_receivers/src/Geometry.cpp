@@ -3,22 +3,22 @@
  * This file is part of SeisSol.
  *
  * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
- * @author Thomas Ulrich 
+ * @author Thomas Ulrich
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -60,7 +60,7 @@ struct Support {
     limits[1][0] = std::numeric_limits<double>::max();
     limits[1][1] = std::numeric_limits<double>::min();
   }
-  
+
   double operator()(int splitdim, int side) const {
     return limits[splitdim][side];
   }
@@ -73,7 +73,7 @@ struct Action {
   double faceNormal[3];
   double faceDist;
   double depth;
-  
+
   void determineNormals() {
     for (unsigned side = 0; side < 3; ++side) {
       double* v0 = vertices[side].coords;
@@ -84,14 +84,14 @@ struct Action {
       normals[side][1] = -v1[0]+v0[0];
 
       dist[side] = normals[side][0] * v0[0] + normals[side][1] * v0[1];
-      
+
       if (normals[side][0] * vtest[0] + normals[side][1] * vtest[1] > dist[side]) {
         normals[side][0] *= -1.;
         normals[side][1] *= -1.;
         dist[side] *= -1;
       }
     }
-    
+
     double a[3];
     double b[3];
     for (unsigned d = 0; d < 3; ++d) {
@@ -103,7 +103,7 @@ struct Action {
     faceNormal[2] = a[0]*b[1] - a[1]*b[0];
     faceDist = faceNormal[0] * vertices[0].coords[0] + faceNormal[1] * vertices[0].coords[1] + faceNormal[2] * vertices[0].coords[2];
   }
-  
+
   void operator()(Receiver& receiver) {
     bool inside = true;
     for (unsigned side = 0; side < 3; ++side) {

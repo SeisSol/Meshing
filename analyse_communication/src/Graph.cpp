@@ -39,7 +39,7 @@ void Graph::printDOT(std::string const& filename)
       edgeCut += m_edges[from * m_numberOfNodes + to];
     }
     fprintf(fp, "%u [label=\"P%u\n%u\"];\n", from, from, edgeCut);
-    
+
     for (unsigned to = from+1; to < m_numberOfNodes; ++to) {
       counter_t edgeCut = m_edges[from * m_numberOfNodes + to] + m_edges[to * m_numberOfNodes + from];
       if (edgeCut > 0) {
@@ -48,9 +48,9 @@ void Graph::printDOT(std::string const& filename)
       }
     }
   }
- 
+
   fprintf(fp, "}\n");
-  
+
   fclose(fp);
 }
 

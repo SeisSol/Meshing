@@ -4,4 +4,3 @@ SolverName=seisSol
 [0]
 AttDefs=simSeisSol/attDefs/v000/
 PatternInfo=simSeisSol/export/case/v000/gambit_seisSol.sxi
-

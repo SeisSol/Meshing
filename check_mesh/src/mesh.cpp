@@ -18,7 +18,7 @@ Mesh::Mesh(const std::string& fileName) {
   std::vector<int> cellIdsAsInFile(numTotalCells);
   std::iota(cellIdsAsInFile.begin(), cellIdsAsInFile.end(), 0);
   puml.addData(cellIdsAsInFile.data(), numTotalCells, PUML::CELL);
-  
+
   // Keep all cells on the same rank
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

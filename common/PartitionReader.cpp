@@ -7,17 +7,17 @@
  * @section LICENSE
  * Copyright (c) 2017, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -106,7 +106,7 @@ PartitionReader::PartitionReader(std::string const& fileName){
 	vertexSize = new int[partitions];
 	stat = nc_get_var_int(ncid, ncVarVrtxSize, vertexSize);
   check_err(stat,__LINE__,__FILE__);
-  
+
   vertexCoordinates = new double[3*maxVertices];
   elementBoundaries = new int[4*maxElements];
   elementVertices = new int[4*maxElements];
@@ -117,7 +117,7 @@ PartitionReader::PartitionReader(std::string const& fileName){
 PartitionReader::~PartitionReader() {
   int stat = nc_close(ncid);
   check_err(stat,__LINE__,__FILE__);
-  
+
   delete[] elementSize;
   delete[] vertexSize;
   delete[] elementBoundaries;
@@ -131,23 +131,23 @@ void PartitionReader::readPartition(int partition) {
   int stat;
   size_t elementsStart[3] = {partition, 0, 0};
   size_t elementsSize[3] = {1, elementSize[partition], 4};
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemVertices, elementsStart, elementsSize, elementVertices);
   check_err(stat,__LINE__,__FILE__);
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemBoundaries, elementsStart, elementsSize, elementBoundaries);
   check_err(stat,__LINE__,__FILE__);
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemNeighborRanks, elementsStart, elementsSize, elementNeighborRanks);
   check_err(stat,__LINE__,__FILE__);
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemGroup, elementsStart, elementsSize, elementGroup);
   check_err(stat,__LINE__,__FILE__);
-  
-  
+
+
   size_t verticesStart[3] = {partition, 0, 0};
   size_t verticesSize[3] = {1, vertexSize[partition], 3};
-  
+
   stat = nc_get_vara_double(ncid, ncVarVrtxCoords, verticesStart, verticesSize, vertexCoordinates);
-  check_err(stat,__LINE__,__FILE__);  
+  check_err(stat,__LINE__,__FILE__);
 }

@@ -362,12 +362,12 @@ int main(int argc, char* argv[])
 
 			delete [] groups;
 		}
-    
-    if (material.size() > 0) {     
+
+    if (material.size() > 0) {
       easi::YAMLParser parser(3);
       easi::Component* model = parser.parse(material);
-      
-      std::vector<std::string> paramNames{"lambda", "mu", "rho"};    
+
+      std::vector<std::string> paramNames{"lambda", "mu", "rho"};
 
       int fds[3];
       for (unsigned d = 0; d < 3; ++d) {
@@ -379,14 +379,14 @@ int main(int argc, char* argv[])
         fds[d] = open((outfilePrefix+"_" + paramNames[d] + ".bin").c_str(), O_CREAT | O_WRONLY | O_TRUNC,
           S_IRUSR |S_IWUSR |S_IRGRP |S_IWGRP | S_IROTH | S_IWOTH);
       }
-      
+
       easi::ArraysAdapter adapter;
       double* parameters[3];
       for (unsigned d = 0; d < 3; ++d) {
         parameters[d] = new double[maxElements];
         adapter.addBindingPoint(paramNames[d], parameters[d]);
       }
-      
+
       int* elements = new int[maxElements*4];
       float* vertices = new float[maxVertices*3];
       int* groups;
@@ -407,7 +407,7 @@ int main(int argc, char* argv[])
         if (hasGroup) {
           for (unsigned int j = 0; j < elementSize[i]; ++j) {
             query.group(j) = groups[j];
-          }          
+          }
         }
         for (unsigned int j = 0; j < elementSize[i]; ++j) {
           for (unsigned d = 0; d < 3; ++d) {
@@ -419,9 +419,9 @@ int main(int argc, char* argv[])
             }
           }
         }
-        
+
         model->evaluate(query, adapter);
-        
+
         for (unsigned d = 0; d < 3; ++d) {
           write(fds[d], parameters[d], elementSize[i]*sizeof(double));
         }
@@ -435,7 +435,7 @@ int main(int argc, char* argv[])
         delete[] parameters[d];
         close(fds[d]);
       }
-      
+
       delete model;
     }
 	}

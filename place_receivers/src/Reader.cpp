@@ -3,22 +3,22 @@
  * This file is part of SeisSol.
  *
  * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
- * @author Thomas Ulrich 
+ * @author Thomas Ulrich
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -69,14 +69,14 @@ std::vector<Point> readReceiverFile(std::string const& fileName) {
       exit(-1);
     }
   }
-  
+
   return locations;
 }
 
 void writeReceiverFile(KDTree const& tree, std::string const& fileName) {
   std::ofstream out(fileName.c_str());
   out << std::scientific << std::setprecision(16);
-  
+
   int failureCounter = 0;
   const auto& receivers = tree.points();
   std::vector<Receiver> sortedPoints(receivers.size());
@@ -128,7 +128,7 @@ Mesh::Mesh(std::string const& fileName){
   vertexSize[0]= nVertex;
 
 
-  double* vertexCoordinate = new double [3]; 
+  double* vertexCoordinate = new double [3];
   for (unsigned int i = 0; i < nVertex; i++) {
     vertexCoordinate = (double*) puml.originalVertices()[i];
     for (unsigned int j = 0; j < 3; j++) {
@@ -136,7 +136,7 @@ Mesh::Mesh(std::string const& fileName){
     }
   }
 
-  unsigned long * elementVertice = new unsigned long [4]; 
+  unsigned long * elementVertice = new unsigned long [4];
   for (unsigned int i = 0; i < nElements; i++) {
     elementVertice = (unsigned long *) puml.originalCells()[i];
     for (unsigned int j = 0; j < 4; j++) {
@@ -150,7 +150,7 @@ Mesh::Mesh(std::string const& fileName){
        elementBoundaries[4*i + face] = (boundaryCond[i] >> (face*8)) & 0xFF;
     }
   }
-  
+
 #else
 
   int stat;
@@ -202,7 +202,7 @@ Mesh::Mesh(std::string const& fileName){
 	vertexSize = new int[partitions];
 	stat = nc_get_var_int(ncid, ncVarVrtxSize, vertexSize);
   check_err(stat,__LINE__,__FILE__);
-  
+
   vertexCoordinates = new double[3*maxVertices];
   elementBoundaries = new int[4*maxElements];
   elementVertices = new int[4*maxElements];
@@ -218,7 +218,7 @@ Mesh::~Mesh() {
   int stat = nc_close(ncid);
   check_err(stat,__LINE__,__FILE__);
 #endif
-  
+
   delete[] elementSize;
   delete[] vertexSize;
   delete[] elementBoundaries;
@@ -231,18 +231,18 @@ void Mesh::readPartition(int partition) {
   int stat;
   size_t elementsStart[3] = {partition, 0, 0};
   size_t elementsSize[3] = {1, elementSize[partition], 4};
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemVertices, elementsStart, elementsSize, elementVertices);
   check_err(stat,__LINE__,__FILE__);
-  
+
   stat = nc_get_vara_int(ncid, ncVarElemBoundaries, elementsStart, elementsSize, elementBoundaries);
   check_err(stat,__LINE__,__FILE__);
-  
-  
+
+
   size_t verticesStart[3] = {partition, 0, 0};
   size_t verticesSize[3] = {1, vertexSize[partition], 3};
-  
+
   stat = nc_get_vara_double(ncid, ncVarVrtxCoords, verticesStart, verticesSize, vertexCoordinates);
-  check_err(stat,__LINE__,__FILE__);  
+  check_err(stat,__LINE__,__FILE__);
 #endif
 }

@@ -65,7 +65,7 @@ vars.SetCompiler(env)
 libs.find(env, 'netcdf')
 hasAsagi = libs.find(env, 'asagi', required=False, parallel=False)
 if hasAsagi:
-  env.Append(CPPDEFINES=['USE_ASAGI']) 
+  env.Append(CPPDEFINES=['USE_ASAGI'])
 
 env.Tool('cmake')
 

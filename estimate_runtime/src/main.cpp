@@ -20,7 +20,7 @@ unsigned getCluster(double timestep, double globalMinTimestep, unsigned rate)
 
   double upper;
   upper = rate * globalMinTimestep;
-  
+
   unsigned cluster = 0;
   while (upper <= timestep) {
     upper *= rate;
@@ -44,8 +44,8 @@ int main(int argc, char** argv)
 	if (args.parse(argc, argv) != utils::Args::Success) {
     return -1;
   }
-  
-  std::string meshFile = args.getArgument<std::string>("mesh");  
+
+  std::string meshFile = args.getArgument<std::string>("mesh");
   double flopsPerCell = args.getArgument<double>("average-flops-per-cell");
   double nodePerformance = args.getArgument<double>("node-performance");
   double pVelocity = args.getArgument<double>("p-wave-velocity", 6000.0);
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   unsigned order = args.getArgument<unsigned>("order");
   unsigned rate = args.getArgument<unsigned>("rate", 2);
   double finalTime = args.getArgument<unsigned>("final-time", 1.0);
-  
+
   PartitionReader reader(meshFile);
   std::vector<double> timesteps;
 
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   double minTimestep = std::numeric_limits<double>::max();
   double maxTimestep = std::numeric_limits<double>::min();
   for (unsigned p = 0; p < reader.partitions; ++p) {
-    std::cout << "Reading partition " << p+1 << "..." << std::endl; 
+    std::cout << "Reading partition " << p+1 << "..." << std::endl;
     reader.readPartition(p);
     numberOfElements += reader.elementSize[p];
 
@@ -81,22 +81,22 @@ int main(int argc, char** argv)
       double Nbcd = length(cross(x[2]-x[1], x[3]-x[1]));
       double insphere = std::fabs(alpha) / (Nabc + Nabd + Nacd + Nbcd);
       minInsphereRadius = std::min(minInsphereRadius, insphere);
-      
+
       double timestep = calculateTimestep(cfl, insphere, pVelocity, order);
       minTimestep = std::min(minTimestep, timestep);
       maxTimestep = std::max(maxTimestep, timestep);
-      
+
       timesteps.push_back(timestep);
     }
   }
-  
+
   unsigned numClusters = getCluster(maxTimestep, minTimestep, rate);
   std::vector<unsigned> clusterHistogram(numClusters+1, 0);
   for (std::vector<double>::const_iterator it = timesteps.begin(); it != timesteps.end(); ++it) {
     unsigned cluster = getCluster(*it, minTimestep, rate);
     ++clusterHistogram[cluster];
   }
-  
+
   double numberOfUpdates = 0;
   double clusterTimestep = minTimestep;
   unsigned cluster = 0;
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     numberOfUpdates += (*it) * std::ceil(finalTime / clusterTimestep);
     clusterTimestep *= rate;
   }
-  
+
   std::cout << "Minimum insphere radius: " << minInsphereRadius << std::endl;
   std::cout << "Elements: " << numberOfElements << std::endl;
   std::cout << "Minimum timestep: " << minTimestep << std::endl;
@@ -117,6 +117,6 @@ int main(int argc, char** argv)
   std::cout << std::endl;
   std::cout << "Number of cell updates (@ " << finalTime << "s): " << numberOfUpdates << std::endl;
   std::cout << "Estimated time on one node: " << numberOfUpdates * flopsPerCell / (nodePerformance * 1.0e9) << std::endl;
-  
+
   return 0;
 }

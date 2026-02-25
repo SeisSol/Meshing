@@ -34,25 +34,25 @@ int main(int argc, char** argv)
   std::string matrixFile = args.getArgument<std::string>("matrix", "");
 
   PartitionReader reader(meshFile);
-  
+
   counter_t totalEdgeCut = 0;
   counter_t totalCommVolume = 0;
-  
+
   counter_t* edgeCut = new counter_t[reader.partitions];
   counter_t* commVolume = new counter_t[reader.partitions];
-  
+
   memset(edgeCut, 0, reader.partitions*sizeof(counter_t));
   memset(commVolume, 0, reader.partitions*sizeof(counter_t));
-  
+
   Graph edgeCutGraph(reader.partitions);
 
   for (unsigned p = 0; p < reader.partitions; ++p) {
     if (p%10 == 0) {
       std::cout << "Reading partition " << p << std::endl;
     }
-    
+
     reader.readPartition(p);
-    
+
     for (unsigned elem = 0; elem < reader.elementSize[p]; ++elem) {
       for (unsigned face = 0; face < 4; ++face) {
         int neighborRank = reader.elementNeighborRanks[4*elem + face];
@@ -65,33 +65,33 @@ int main(int argc, char** argv)
       neighbors.erase(p);
       commVolume[p] += neighbors.size();
     }
-    
+
     totalEdgeCut += edgeCut[p];
     totalCommVolume += commVolume[p];
   }
-  
+
   if (dotFile.size() > 0) {
     edgeCutGraph.printDOT(dotFile);
   }
   if (matrixFile.size() > 0) {
     edgeCutGraph.printMatrix(matrixFile);
   }
-  
+
   printCounter("Edge cut", edgeCut, reader.partitions);
   printCounter("Communication volume", commVolume, reader.partitions);
-  
+
   std::cout << "Total edge cut: " << totalEdgeCut << std::endl;
   std::cout << "Total communication volume: " << totalCommVolume << std::endl;
   std::cout << "Ratio: " << static_cast<double>(totalEdgeCut) / totalCommVolume << std::endl << std::endl;
-  
+
   std::cout << "Order\t\tEdge cut (MB)\tComm volume (MB)" << std::endl;
   for (unsigned order = 1; order <= 8; ++order) {
     std::cout << order << "\t\t" << sizeof(double)*9*order*(order+1)/2.0 * totalEdgeCut / (1024.0*1024.0)
                        << "\t\t" << sizeof(double)*9*order*(order+1)*(order+2)/6.0 * totalCommVolume / (1024.0*1024.0) << std::endl;
   }
-  
+
   delete[] edgeCut;
   delete[] commVolume;
-  
+
   return 0;
 }

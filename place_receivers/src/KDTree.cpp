@@ -6,9 +6,9 @@
 
 KDTree::KDTree(std::vector<Point> const& points, int maxLeafSize)
 	: p(2), maxLeafN(maxLeafSize)
-{	
+{
 	const auto n = points.size();
-	
+
 	// Copy data and change row-major to column-major storage.
 	data.resize(n);
 	for (std::size_t i = 0; i < n; ++i) {
@@ -17,7 +17,7 @@ KDTree::KDTree(std::vector<Point> const& points, int maxLeafSize)
 		data[i].point.z = points[i].z;
 		data[i].found = false;
 	}
-	
+
 	idx.resize(n);
 	for (int i = 0; i < n; ++i) {
 		idx[i] = i;
@@ -28,7 +28,7 @@ KDTree::KDTree(std::vector<Point> const& points, int maxLeafSize)
 	nodes.resize(maxNodes);
 	nodes[0].start = 0;
 	nodes[0].n = n;
-	
+
 	buildTree(0, 0);
 }
 
@@ -86,7 +86,7 @@ void KDTree::buildTree(int k, int splitdim)
 		Node& right = nodes[rightChild(k)];
 		right.start = median_idx;
 		right.n = node.n - half;
-		
+
 		int nextSplitdim = (splitdim + 1) % p;
 		buildTree(leftChild(k), nextSplitdim);
 		buildTree(rightChild(k), nextSplitdim);

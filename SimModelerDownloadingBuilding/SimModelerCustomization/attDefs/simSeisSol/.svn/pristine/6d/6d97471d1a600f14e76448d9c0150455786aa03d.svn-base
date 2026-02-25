@@ -17,11 +17,11 @@ define-procedure hasBoundaryCondition(attName) {
       gfTag = $tag
       attributes["boundaryCondition"]/* {
 	 match = function:strcmp($image,$(inputAttName))
-         hasBcAtt = function:notI($match) 
+         hasBcAtt = function:notI($match)
       }
    }
 
-   hasBoundaryCondition = $hasBcAtt 
+   hasBoundaryCondition = $hasBcAtt
 }
 
 define-procedure writeMeshFacesWithAttribute(attName, displayName, bcID, version)  {
@@ -55,11 +55,11 @@ define-procedure writeMeshFacesWithAttribute(attName, displayName, bcID, version
 	 numFaces = function:addI($count,$numFaces)
 	 info:header = "  num classified faces on gFace $gfTag = $count ... total classified = $numFaces"
       }
-      #get number of regions with a face classified on gface 
+      #get number of regions with a face classified on gface
       mfaces/*/mregions/* {
          regionExists = function:mapI2I($id,"<-1 0>", 1)
          skip = function:notI($regionExists)
-         numRegions = function:addI(1,$numRegions) 
+         numRegions = function:addI(1,$numRegions)
       }
       info:header = "  num regions with a face classied on gFace $gfTag = $numRegions"
    }
@@ -68,11 +68,11 @@ define-procedure writeMeshFacesWithAttribute(attName, displayName, bcID, version
    info:header = " writing $numFaces faces .... "
    info:header = " writing $numRegions regions .... "
 
-   #write the header string 
+   #write the header string
    header = "BOUNDARY CONDITIONS $version \n" +
 	    "      $bcID  1   $numRegions   0   6"
 
-   #loop over the mesh faces classified on the geometric model faces with the bcAttribute 
+   #loop over the mesh faces classified on the geometric model faces with the bcAttribute
    # and write the mesh elements and the face number
    gmodel/gfaces/* {
       gfTag = $tag
@@ -90,38 +90,38 @@ define-procedure writeMeshFacesWithAttribute(attName, displayName, bcID, version
       }
       skip = function:notI($hasBcAtt)
 
-      #need to determine the vertex numbering so the face numbering can be determined 
-      # see www.stanford.edu/class/me469b/handouts/gambit_write.pdf pg C-33 
-      # for the tet ordering   
+      #need to determine the vertex numbering so the face numbering can be determined
+      # see www.stanford.edu/class/me469b/handouts/gambit_write.pdf pg C-33
+      # for the tet ordering
       # gambit and MeshSim have the same ordering for tets
       # see the R_face documentation for the MeshSim ordering
       mfaces/* {
          mRgnId_A = $(mregions[0]/id)
          mRgnId_B = $(mregions[1]/id)
 
-         . {  
+         . {
 	    regionExists = function:mapI2I($mRgnId_A,"<-1 0>", 1)
 	    skip = function:notI($regionExists)
 	    # Need the raw mesh region id to call mfaceNum()
 	    fnum = function:mfaceNum($mRgnId_A)
 	    snum = function:addI($fnum, 1)
 	    # for each face write:
-	    # <parent mesh region id - this needs to have an offset?? > 
-	    # <6 for tet> 
+	    # <parent mesh region id - this needs to have an offset?? >
+	    # <6 for tet>
 	    # <face number see above note>
-	    header = "   $mRgnId_A 6 $snum"  
+	    header = "   $mRgnId_A 6 $snum"
          } # end region A
-         . {  
+         . {
 	    regionExists = function:mapI2I($mRgnId_B,"<-1 0>", 1)
 	    skip = function:notI($regionExists)
 	    # Need the raw mesh region id to call mfaceNum()
 	    fnum = function:mfaceNum($mRgnId_B)
 	    snum = function:addI($fnum, 1)
 	    # for each face write:
-	    # <parent mesh region id - this needs to have an offset?? > 
-	    # <6 for tet> 
+	    # <parent mesh region id - this needs to have an offset?? >
+	    # <6 for tet>
 	    # <face number see above note>
-	    header = "   $mRgnId_B 6 $snum"  
+	    header = "   $mRgnId_B 6 $snum"
          } # end region B
       }  # end faces
    } # end gfaces
@@ -244,7 +244,7 @@ mesh/mregions {
           header = "$(id,I8) $(ntype,I2) $(ndp,I2) $(mvertices[*]/id,I8)"
         }
         . {
-          # Pyrmaid elements 
+          # Pyrmaid elements
           skip = function:compI($ndp,5)
           header = "$(id,I8) $(ntype,I2) $(ndp,I2) " +
             "$(mvertices[0]/id,I8)$(mvertices[1]/id,I8)$(mvertices[3]/id,I8)$(mvertices[2]/id,I8)" +

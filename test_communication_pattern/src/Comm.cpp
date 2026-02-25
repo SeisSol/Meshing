@@ -19,14 +19,14 @@ void testCommunication(counter_t* edgeCut, size_t messageSize, int numTimesteps)
   int rank, numRanks;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
-  
+
   unsigned N = 0;
   counter_t E = 0;
   for (unsigned r = 0; r < numRanks; ++r) {
     N += (edgeCut[r] > 0) ? 1 : 0;
     E += edgeCut[r];
   }
-  
+
   MPI_Request* requests = new MPI_Request[2*N];
   unsigned char* copy = new unsigned char[E*messageSize];
   unsigned char* ghost = new unsigned char[E*messageSize];
@@ -34,13 +34,13 @@ void testCommunication(counter_t* edgeCut, size_t messageSize, int numTimesteps)
     copy[i] = static_cast<unsigned char>(lrand48() % 256);
     ghost[i] = static_cast<unsigned char>(lrand48() % 256);
   }
-  
+
   if (rank == 0) {
     printf("Rank       tavg       tmin       tmax         bw\n");
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
- 
+
   gettimeofday(&start_time_total, NULL);
   for (unsigned t = 0; t < numTimesteps; ++t) {
     unsigned e = 0;
@@ -62,8 +62,8 @@ void testCommunication(counter_t* edgeCut, size_t messageSize, int numTimesteps)
   }
   gettimeofday(&end_time_total, NULL);
   time_avg = usec(start_time_total, end_time_total) / numTimesteps;
-  
+
   printf("%4d %10.2lf %10.2lf %10.2lf %10.2lf\n", rank, time_avg, time_min, time_max, E*messageSize / 1.048576 / time_avg);
-  
-  delete[] requests;    
+
+  delete[] requests;
 }

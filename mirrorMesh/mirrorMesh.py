@@ -83,9 +83,9 @@ xyzb = np.zeros((inew,3))
 xyzb[0:nNodes,:] = xyz
 for inew in range(nNodes, Nnodesb):
    i = invnodesLU[inew]
-   xyzb[inew,:] = xyzb[i,:] 
+   xyzb[inew,:] = xyzb[i,:]
    xyzb[inew,iN] = xc-(xyzb[i,iN]-xc)
-  
+
 
 #create new connect
 tetrab = np.zeros((nElements*2,4), dtype=int)
@@ -130,4 +130,3 @@ for ic in [1,3,5]:
 boundaryb = boundaryFaceb[:,0]+256*boundaryFaceb[:,1]+256*256*boundaryFaceb[:,2]+256*256*256*boundaryFaceb[:,3]
 
 write_xdmfh5(fn, xyzb, tetrab, groupb, boundaryb)
-

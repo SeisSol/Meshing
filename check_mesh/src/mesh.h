@@ -42,7 +42,7 @@ class Mesh {
     else if (id == 3) { return std::string("dynamic rupture"); }
     else if (id == 5) { return std::string("absorbing"); }
     else if (id == 6) { return std::string("periodic"); }
-    else if (id > 64) { 
+    else if (id > 64) {
       std::stringstream s;
       s << "fault-tagging (" << id << ")";
       return s.str();

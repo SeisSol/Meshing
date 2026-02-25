@@ -6,7 +6,7 @@ Method
 ------
 The program iterates over all faces with free surface boundary condition. For each face, the tool checks if a receiver lies inside the projection of the face on the x-y-plane. Then, the receiver's z coordinate is set such that the receiver lies on the face. Afterwards it is lowered by a configurable amount along the z axis. (The direction is determined by the face normal, i.e. "lowered" means in the opposite direction of the normal.)
 
-Compilation 
+Compilation
 -----
 
 ```
