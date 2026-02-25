@@ -1,0 +1,6 @@
+atd 13
+
+image "seisSol" : "analysis" root {
+  C "problem definition":"seisSol" 0 1 1;
+};
+

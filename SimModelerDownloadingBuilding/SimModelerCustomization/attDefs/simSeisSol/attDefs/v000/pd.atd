@@ -1,0 +1,11 @@
+13  # attdef text-file version
+
+image "seisSol" : "problem definition" {
+   O type "boundaryCondition": void A  e < f > p "Boundary Condition";
+   image "freeSurface":"boundaryCondition" p "Free Surface";
+   image "nonConfoming":"boundaryCondition" p "Non-Conforming";
+   image "dynamicRupture":"boundaryCondition" p "Dynamic Rupture";
+   image "inflow":"boundaryCondition" p "Inflow";
+   image "absorbing":"boundaryCondition" p "Absorbing";
+   image "periodic":"boundaryCondition" p "Periodic";
+};

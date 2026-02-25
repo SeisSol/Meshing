@@ -1,0 +1,12 @@
+[submodule "submodules/scons-tools"]
+	path = submodules/scons-tools
+	url = ../../TUM-I5/scons-tools.git
+[submodule "submodules/utils"]
+	path = submodules/utils
+	url = ../../TUM-I5/utils.git
+[submodule "submodules/glm"]
+	path = submodules/glm
+	url = ../../g-truc/glm.git
+[submodule "place_receivers/submodules/PUML"]
+	path = submodules/PUML
+	url = ../../TUM-I5/PUML2.git

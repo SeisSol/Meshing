@@ -1,0 +1,414 @@
+sxp 0
+# gambit.sxp Write Gambit file from a mesh
+# Created 6/8/05 emh
+
+mfaceNormals = "off"
+separator = ""
+version = "1.2.1"
+
+#return 1 if the boundary condition attribute 'attName' exists, 0 otherwise
+define-procedure hasBoundaryCondition(attName) {
+   info:header = "hasBoundarycondition $attName"
+   # count number of mesh faces classified on geometric model faces with the 'attName' attribute
+   inputAttName = $attName
+   static:hasBcAtt = 0
+   gmodel/gfaces/* {
+      skip = $hasBcAtt # stop once the att is found
+      gfTag = $tag
+      attributes["boundaryCondition"]/* {
+	 match = function:strcmp($image,$(inputAttName))
+         hasBcAtt = function:notI($match) 
+      }
+   }
+
+   hasBoundaryCondition = $hasBcAtt 
+}
+
+define-procedure writeMeshFacesWithAttribute(attName, displayName, bcID, version)  {
+   info:header = "writeMeshFacesWithAttribute $attName, $displayName, $bcID"
+
+   inputAttName = $attName
+
+   static:bcName = 0
+
+   # count number of mesh faces classified on geometric model faces with the 'attName' attribute
+   static:numFaces = 0
+   static:numRegions = 0
+   gmodel/gfaces/* {
+      gfTag = $tag
+      static:hasBcAtt = 0
+      static:bcType = 0
+
+      attributes["boundaryCondition"]/* {
+         match = function:strcmp($image,$(inputAttName))
+         hasBcAtt = function:mapI2I($match,"<0 1>", 0)
+         skip = $match
+         info:header = "  bc $image $name matches $inputAttName, match = $match, hasBcAtt = $hasBcAtt"
+	 bcName = $name
+	 bcType = $value
+	 info:header = "  bc $image $bcName found on gface $gfTag"
+      }
+      skip = function:notI($hasBcAtt)
+      #get number of classified faces
+      mfaces  {
+	 info:header = "  num faces $numFaces, count $count"
+	 numFaces = function:addI($count,$numFaces)
+	 info:header = "  num classified faces on gFace $gfTag = $count ... total classified = $numFaces"
+      }
+      #get number of regions with a face classified on gface 
+      mfaces/*/mregions/* {
+         regionExists = function:mapI2I($id,"<-1 0>", 1)
+         skip = function:notI($regionExists)
+         numRegions = function:addI(1,$numRegions) 
+      }
+      info:header = "  num regions with a face classied on gFace $gfTag = $numRegions"
+   }
+
+   skip = function:notI($numFaces)
+   info:header = " writing $numFaces faces .... "
+   info:header = " writing $numRegions regions .... "
+
+   #write the header string 
+   header = "BOUNDARY CONDITIONS $version \n" +
+	    "      $bcID  1   $numRegions   0   6"
+
+   #loop over the mesh faces classified on the geometric model faces with the bcAttribute 
+   # and write the mesh elements and the face number
+   gmodel/gfaces/* {
+      gfTag = $tag
+      static:hasBcAtt = 0
+      static:bcType = 0
+
+      attributes["boundaryCondition"]/* {
+         match = function:strcmp($image,$(inputAttName))
+         hasBcAtt = function:mapI2I($match,"<0 1>", 0)
+         skip = $match
+         info:header = "  bc $image $name matches $inputAttName, match = $match, hasBcAtt = $hasBcAtt"
+	 bcName = $name
+	 bcType = $value
+	 info:header = "  bc $image $bcName found on gface $gfTag"
+      }
+      skip = function:notI($hasBcAtt)
+
+      #need to determine the vertex numbering so the face numbering can be determined 
+      # see www.stanford.edu/class/me469b/handouts/gambit_write.pdf pg C-33 
+      # for the tet ordering   
+      # gambit and MeshSim have the same ordering for tets
+      # see the R_face documentation for the MeshSim ordering
+      mfaces/* {
+         mRgnId_A = $(mregions[0]/id)
+         mRgnId_B = $(mregions[1]/id)
+
+         . {  
+	    regionExists = function:mapI2I($mRgnId_A,"<-1 0>", 1)
+	    skip = function:notI($regionExists)
+	    # Need the raw mesh region id to call mfaceNum()
+	    fnum = function:mfaceNum($mRgnId_A)
+	    snum = function:addI($fnum, 1)
+	    # for each face write:
+	    # <parent mesh region id - this needs to have an offset?? > 
+	    # <6 for tet> 
+	    # <face number see above note>
+	    header = "   $mRgnId_A 6 $snum"  
+         } # end region A
+         . {  
+	    regionExists = function:mapI2I($mRgnId_B,"<-1 0>", 1)
+	    skip = function:notI($regionExists)
+	    # Need the raw mesh region id to call mfaceNum()
+	    fnum = function:mfaceNum($mRgnId_B)
+	    snum = function:addI($fnum, 1)
+	    # for each face write:
+	    # <parent mesh region id - this needs to have an offset?? > 
+	    # <6 for tet> 
+	    # <face number see above note>
+	    header = "   $mRgnId_B 6 $snum"  
+         } # end region B
+      }  # end faces
+   } # end gfaces
+   footer = "ENDOFSECTION"
+   info:header = "done writeMeshFacesWithAttribute $attName, $displayName, $bcID"
+}
+
+
+
+header = "        CONTROL INFO $version"
+header = "** GAMBIT NEUTRAL FILE"
+header = "Simmetrix mesh in GAMBIT neutral file format"
+#Format('PROGRAM: ',A20, 5X,'VERSION: ',F5.2)
+header = "PROGRAM:               Gambit     $version"
+header = "$time"
+
+# Get the number of points
+static:numPoints = 0
+mesh/mvertices {
+    numPoints = $count
+    message = function:renumber(1)
+}
+
+# Get the number of elements (# regions for volume mesh, #faces for surface mesh)
+static:is-volume-mesh = 0
+static:numElems = 0
+mesh/mregions {
+    is-volume-mesh = 1
+    numElems = $count
+    message = function:renumber(1)
+}
+
+mesh/mfaces {
+	# Skip this if it was done by the regions
+    skip = $is-volume-mesh
+	numElems = $count
+    message = function:renumber(1)
+}
+
+
+# Compute number of element groups to be written below
+static:NGRPS =  0    # number of element groups
+
+# For volume mesh, one element group for each model region
+.  {
+  skip = function:notI($is-volume-mesh)
+  gmodel/gregions/*  {
+    # Skip if no mesh regions
+    static:mr-count = 0
+    mregions  {
+      mr-count = $count
+    }
+    skip = function:notI($mr-count)
+    NGRPS = function:addI($NGRPS,1)
+  }
+}
+
+# For surface mesh, one element group for each model face
+.  {
+  skip = $is-volume-mesh
+  gmodel/gfaces/*  {
+    # Skip if no mesh faces
+    static:mf-count = 0
+    mfaces  {
+      mf-count = $count
+    }
+    skip = function:notI($mf-count)
+    NGRPS = function:addI($NGRPS,1)
+  }
+}
+
+
+hasFreeSurf = call-procedure:hasBoundaryCondition("freeSurface")
+hasNonConforming = call-procedure:hasBoundaryCondition("nonConforming")
+hasDynamicRupture = call-procedure:hasBoundaryCondition("dynamicRupture")
+hasInflow = call-procedure:hasBoundaryCondition("inflow")
+hasAbsorbing = call-procedure:hasBoundaryCondition("absorbing")
+hasPeriodic = call-procedure:hasBoundaryCondition("periodic")
+info:header = "BCs: $hasFreeSurf, $hasNonConforming, $hasDynamicRupture, $hasInflow, $hasAbsorbing, $hasPeriodic"
+numBoundaryConditionSets = function:addI($hasFreeSurf, $hasNonConforming, $hasDynamicRupture, $hasInflow, $hasAbsorbing, $hasPeriodic)
+
+NBSETS = $numBoundaryConditionSets    # number of boundary condition sets
+NDFCD =  3    # number of coordinate dimensions (2 or 3)
+NDFVL =  3    # number of velocity components (2 or 3)
+header = "     NUMNP     NELEM     NGRPS    NBSETS     NDFCD     NDFVL"
+header = " $(numPoints,I9) $(numElems,I9) $(NGRPS,I9) $(NBSETS,I9) $(NDFCD,I9) $(NDFVL,I9)"
+footer = "ENDOFSECTION"
+
+
+
+# Write node-coordinates section
+mesh/mvertices {
+	header = "   NODAL COORDINATES $version"
+	item = "$(id,I10)$(x,E20.11)$(y,E20.11)$(z,E20.11)"
+	footer = "ENDOFSECTION"
+}
+
+
+
+# Write elements (regions or faces)
+header = "      ELEMENTS/CELLS $version"
+mesh/mregions {
+    #header = "/   Volume Elements"
+    ntype-map = "<8 4> <6 5> <4 6> <5 7>"  # maps num vertices to element type
+
+    # Traverse each region individually to get type
+    *  {
+        static:num-vertices = 0
+        mvertices  {
+            num-vertices = $count
+        }
+        ntype = function:mapI2I($num-vertices,$ntype-map,0)
+        ndp = $num-vertices
+        #header = "$(id,I8) $(ntype,I2) $(ndp,I2) $(mvertices[*]/id,I8)"
+
+        # Because gambit node order != Simmetrix node order:
+        . {
+          # Tet elements
+          skip = function:compI($ndp,4)
+          header = "$(id,I8) $(ntype,I2) $(ndp,I2) $(mvertices[*]/id,I8)"
+        }
+        . {
+          # Pyrmaid elements 
+          skip = function:compI($ndp,5)
+          header = "$(id,I8) $(ntype,I2) $(ndp,I2) " +
+            "$(mvertices[0]/id,I8)$(mvertices[1]/id,I8)$(mvertices[3]/id,I8)$(mvertices[2]/id,I8)" +
+            "$(mvertices[4]/id,I8)"
+        }
+        . {
+          # Wedge elements
+          skip = function:compI($ndp,6)
+          header = "$(id,I8) $(ntype,I2) $(ndp,I2) " +
+            "$(mvertices[0]/id,I8)$(mvertices[1]/id,I8)$(mvertices[2]/id,I8)$(mvertices[3]/id,I8)" +
+            "$(mvertices[5]/id,I8)$(mvertices[4]/id,I8)"
+        }
+        . {
+          # Hex elements
+          skip = function:compI($ndp,8)
+          header = "$(id,I8) $(ntype,I2) $(ndp,I2) " +
+            "$(mvertices[3]/id,I8)$(mvertices[2]/id,I8)$(mvertices[7]/id,I8)$(mvertices[6]/id,I8)" +
+            "$(mvertices[0]/id,I8)$(mvertices[1]/id,I8)$(mvertices[4]/id,I8)"
+          header = "               $(mvertices[5]/id,I8)"
+        }
+    }  # end contect (*)
+}  # end context (mregions)
+
+mesh/mfaces {
+    skip = $is-volume-mesh
+
+    #header = "/   Surface Elements"
+    ntype-map = "<3 3> <4 2>"  # maps num vertices to element type
+
+    # Traverse each face individually to get type
+    *  {
+        static:num-vertices = 0
+        mvertices  {
+            num-vertices = $count
+        }
+        ntype = function:mapI2I($num-vertices,$ntype-map,0)
+        ndp = $num-vertices
+        header = "$(id,I8) $(ntype,I2) $(ndp,I2) $(mvertices[*]/id,I8)"
+    }  # end contect (*)
+}  # end context (mfaces)
+
+footer = "ENDOFSECTION"
+
+
+# If volume mesh, create element group for each model region
+.  {
+  skip = function:notI($is-volume-mesh)
+
+  material = 0
+  nflags = 1
+  zero = 0
+  gmodel/gregions/*  {
+    # Skip if no mesh regions
+    static:mr-count = 0
+    mregions  {
+      mr-count = $count
+    }
+    skip = function:notI($mr-count)
+
+    # Write the header
+    header = "      ELEMENT GROUP $version"
+    header = "GROUP: $(tag,I10) ELEMENTS: $(mr-count,I10)MATERIAL: $(material,I10) NFLAGS:$(nflags,I10)"
+    header = "ModelRegion$(tag)"
+    header = "$(zero,I8)"
+
+     # Write the element ids in "10I8" format
+     static:index = 0
+     mregions/*  {
+       terminator = ""
+       header = "$(id,I8)"
+       index = function:addI($index,1)
+
+       mod = function:modI($index,10)
+       skip = $mod
+       footer = "\n"
+     }
+     . {  # last line feed is special
+       mod = function:modI($index,10)
+       skip = function:notI($mod)
+       footer = ""
+     }
+
+    footer = "ENDOFSECTION"
+  }  # end context "gmodel/gregions/*"
+}
+
+
+# If surface mesh, create element group for each model face
+.  {
+  skip = $is-volume-mesh
+
+  material = 0    # 0 = unknown
+  nflags = 1      # number of solver flags (I think there must be at least one)
+  zero = 0
+  gmodel/gfaces/*  {
+    # Skip if no mesh faces
+    static:mf-count = 0
+    mfaces  {
+      mf-count = $count
+    }
+    skip = function:notI($mf-count)
+
+    # Write the header
+    header = "      ELEMENT GROUP $version"
+    header = "GROUP: $(tag,I10) ELEMENTS: $(mf-count,I10)MATERIAL: $(material,I10) NFLAGS:$(nflags,I10)"
+    header = "ModelFace$(tag)"
+    header = "$(zero,I8)"    # empty solver flag
+
+     # Write the element ids in "10I8" format
+     static:index = 0
+     mfaces/*  {
+       terminator = ""
+       header = "$(id,I8)"
+       index = function:addI($index,1)
+
+       mod = function:modI($index,10)
+       skip = $mod
+       footer = "\n"
+     }
+     . {  # last line feed is special
+       mod = function:modI($index,10)
+       skip = function:notI($mod)
+       footer = ""
+     }
+
+    footer = "ENDOFSECTION"
+  }  # end context "gmodel/gfaces/*"
+}
+
+#
+#Boundary Conditions
+#
+
+bcNameToDisplayName = "<'freeSurface' 'Free Surface'> <'nonConforming' 'Non-Conforming'> <'dynamicRupture' 'Dynamic Rupture'> <'inflow' 'Inflow'> <'absorbing' 'Absorbing'> <'periodic' 'Periodic'>"
+bcNameToIdMap = "<'freeSurface' 101> <'nonConforming' 102> <'dynamicRupture' 103> <'inflow' 104> <'absorbing' 105> <'periodic' 106>"
+#bcNameToIdMap = "<'Free Surface' 101> <'Non-Conforming' 102> <'Dynamic Rupture' 103> <'Inflow' 104> <'Absorbing' 105> <'Periodic' 106>"
+
+. {
+   displayString = function:mapS2S("freeSurface", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("freeSurface", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("freeSurface", $displayString, $bcID, $version)
+}
+. {
+   displayString = function:mapS2S("nonConforming", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("nonConforming", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("nonConforming", $displayString, $bcID, $version)
+}
+. {
+   displayString = function:mapS2S("dynamicRupture", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("dynamicRupture", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("dynamicRupture", $displayString, $bcID, $version)
+}
+. {
+   displayString = function:mapS2S("inflow", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("inflow", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("inflow", $displayString, $bcID, $version)
+}
+. {
+   displayString = function:mapS2S("absorbing", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("absorbing", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("absorbing", $displayString, $bcID, $version)
+}
+. {
+   displayString = function:mapS2S("periodic", $bcNameToDisplayName, "PARSE_ERROR")
+   bcID = function:mapS2I("periodic", $bcNameToIdMap, "PARSE_ERROR")
+   x = call-procedure:writeMeshFacesWithAttribute("periodic", $displayString, $bcID, $version)
+}

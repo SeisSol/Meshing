@@ -1,5 +1,4 @@
 Preprocessing
 =============
 
-This folder contains some tools and scripts which are (by now) still hosted
-within the SeisSol main repostiory. We plan to put them somewhere else soon.
+A collection of useful tools for mesh generation and preprocessing for [SeisSol](http://www.seissol.org).
