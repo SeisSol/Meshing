@@ -2,7 +2,8 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
@@ -40,10 +41,9 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
-#include "Reader.h"
 #include "KDTree.h"
+#include "Reader.h"
 
-void setElevation(int partition, double depth, Mesh const& mesh, KDTree& tree);
-
+void setElevation(int partition, double depth, const Mesh& mesh, KDTree& tree);
 
 #endif

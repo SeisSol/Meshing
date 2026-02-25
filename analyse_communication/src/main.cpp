@@ -1,13 +1,12 @@
+#include "Graph.h"
+#include "common/PartitionReader.h"
+
+#include <cstring>
 #include <iostream>
 #include <set>
-#include <cstring>
 #include <utils/args.h>
 
-#include "common/PartitionReader.h"
-#include "Graph.h"
-
-void printCounter(std::string const& name, counter_t* counter, unsigned numPartitions)
-{
+void printCounter(const std::string& name, counter_t* counter, unsigned numPartitions) {
   std::cout << std::endl << name;
   for (unsigned p = 0; p < numPartitions; ++p) {
     if (p % 10 == 0) {
@@ -18,8 +17,7 @@ void printCounter(std::string const& name, counter_t* counter, unsigned numParti
   std::cout << std::endl << std::endl;
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   utils::Args args;
   args.addOption("dot", 'd', "Write dot file for visualisation.", utils::Args::Required, false);
   args.addOption("matrix", 'm', "Write edge-cut matrix.", utils::Args::Required, false);
@@ -41,13 +39,13 @@ int main(int argc, char** argv)
   counter_t* edgeCut = new counter_t[reader.partitions];
   counter_t* commVolume = new counter_t[reader.partitions];
 
-  memset(edgeCut, 0, reader.partitions*sizeof(counter_t));
-  memset(commVolume, 0, reader.partitions*sizeof(counter_t));
+  memset(edgeCut, 0, reader.partitions * sizeof(counter_t));
+  memset(commVolume, 0, reader.partitions * sizeof(counter_t));
 
   Graph edgeCutGraph(reader.partitions);
 
   for (unsigned p = 0; p < reader.partitions; ++p) {
-    if (p%10 == 0) {
+    if (p % 10 == 0) {
       std::cout << "Reading partition " << p << std::endl;
     }
 
@@ -55,13 +53,14 @@ int main(int argc, char** argv)
 
     for (unsigned elem = 0; elem < reader.elementSize[p]; ++elem) {
       for (unsigned face = 0; face < 4; ++face) {
-        int neighborRank = reader.elementNeighborRanks[4*elem + face];
+        int neighborRank = reader.elementNeighborRanks[4 * elem + face];
         if (neighborRank != p) {
           ++edgeCut[p];
           edgeCutGraph.addEdge(p, static_cast<unsigned>(neighborRank));
         }
       }
-      std::set<int> neighbors(reader.elementNeighborRanks + 4*elem, reader.elementNeighborRanks + 4*elem + 4);
+      std::set<int> neighbors(reader.elementNeighborRanks + 4 * elem,
+                              reader.elementNeighborRanks + 4 * elem + 4);
       neighbors.erase(p);
       commVolume[p] += neighbors.size();
     }
@@ -82,12 +81,17 @@ int main(int argc, char** argv)
 
   std::cout << "Total edge cut: " << totalEdgeCut << std::endl;
   std::cout << "Total communication volume: " << totalCommVolume << std::endl;
-  std::cout << "Ratio: " << static_cast<double>(totalEdgeCut) / totalCommVolume << std::endl << std::endl;
+  std::cout << "Ratio: " << static_cast<double>(totalEdgeCut) / totalCommVolume << std::endl
+            << std::endl;
 
   std::cout << "Order\t\tEdge cut (MB)\tComm volume (MB)" << std::endl;
   for (unsigned order = 1; order <= 8; ++order) {
-    std::cout << order << "\t\t" << sizeof(double)*9*order*(order+1)/2.0 * totalEdgeCut / (1024.0*1024.0)
-                       << "\t\t" << sizeof(double)*9*order*(order+1)*(order+2)/6.0 * totalCommVolume / (1024.0*1024.0) << std::endl;
+    std::cout << order << "\t\t"
+              << sizeof(double) * 9 * order * (order + 1) / 2.0 * totalEdgeCut / (1024.0 * 1024.0)
+              << "\t\t"
+              << sizeof(double) * 9 * order * (order + 1) * (order + 2) / 6.0 * totalCommVolume /
+                     (1024.0 * 1024.0)
+              << std::endl;
   }
 
   delete[] edgeCut;

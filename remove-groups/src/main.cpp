@@ -1,19 +1,19 @@
-#include <cmath>
-#include <iostream>
-#include <utils/args.h>
-#include <set>
-#include <regex>
-#include <iterator>
+#include "Filter.h"
+#include "Reader.h"
+#include "Writer.h"
+#include "mpi.h"
+
 #include <algorithm>
 #include <charconv>
+#include <cmath>
 #include <filesystem>
+#include <iostream>
+#include <iterator>
+#include <regex>
+#include <set>
+#include <utils/args.h>
 
-#include "mpi.h"
-#include "Reader.h"
-#include "Filter.h"
-#include "Writer.h"
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   utils::Args args;
   args.addOption("input", 'i', "input mesh");
@@ -24,29 +24,25 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-
   auto groupsString = args.getArgument<std::string>("remove-groups");
   const std::regex groupsRegex("\\,");
   std::set<unsigned int> groupsToRemove{};
-  std::for_each(std::sregex_token_iterator(groupsString.begin(),
-                                           groupsString.end(),
-                                           groupsRegex,
-                                           -1),
-                std::sregex_token_iterator(),
-                [&groupsToRemove](auto &arg) {
-                    unsigned int groupInt;
-                    auto[ptr, parseError] = std::from_chars(
-                            arg.str().data(),
-                            arg.str().data() + arg.str().size(),
-                            groupInt);
-                    if (parseError == std::errc::invalid_argument
-                        || parseError == std::errc::result_out_of_range) {
-                      std::cerr << "Group string is not a comma separated list of unsigned integers" << std::endl;
-                      std::abort();
-                    }
-                    groupsToRemove.insert(groupInt);
-                });
-
+  std::for_each(
+      std::sregex_token_iterator(groupsString.begin(), groupsString.end(), groupsRegex, -1),
+      std::sregex_token_iterator(),
+      [&groupsToRemove](auto& arg) {
+        unsigned int groupInt;
+        auto [ptr, parseError] =
+            std::from_chars(arg.str().data(), arg.str().data() + arg.str().size(), groupInt);
+        if (parseError == std::errc::invalid_argument ||
+            parseError == std::errc::result_out_of_range) {
+          std::cerr << "Group string is not a comma separated list "
+                       "of unsigned integers"
+                    << std::endl;
+          std::abort();
+        }
+        groupsToRemove.insert(groupInt);
+      });
 
   // Input
   const auto meshFile = args.getArgument<std::string>("input");

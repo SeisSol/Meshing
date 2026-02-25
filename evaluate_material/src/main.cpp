@@ -1,13 +1,12 @@
-#include <iostream>
-#include <string>
-
-#include <mpi.h>
-
 #include "mesh.h"
 #include "parameterDB.h"
 #include "utils/args.h"
 #include "utils/logger.h"
 #include "writer.h"
+
+#include <iostream>
+#include <mpi.h>
+#include <string>
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);

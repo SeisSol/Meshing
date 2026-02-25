@@ -1,13 +1,12 @@
 #ifndef WRITER_H_
 #define WRITER_H_
 
+#include "mesh.h"
+
 #include <cassert>
 #include <fstream>
-#include <iostream>
-
 #include <hdf5.h>
-
-#include "mesh.h"
+#include <iostream>
 
 enum class Hdf5DataType { hdf5UInt64, hdf5Int32, hdf5Double };
 
@@ -22,9 +21,10 @@ static void checkH5ErrImpl(TT status, const char* file, int line) {
 class Writer {
   public:
   explicit Writer(const std::string& fileNamePrefix, const Mesh& mesh)
-      : mesh(mesh), xdmfFileName(fileNamePrefix + ".xdmf"), hdfFileName(fileNamePrefix + ".h5"){};
+      : mesh(mesh), xdmfFileName(fileNamePrefix + ".xdmf"), hdfFileName(fileNamePrefix + ".h5") {};
 
-  void write(const std::vector<std::string>& parameterNames, const std::vector<std::vector<double>>& materialValues) {
+  void write(const std::vector<std::string>& parameterNames,
+             const std::vector<std::vector<double>>& materialValues) {
     assert(parameterNames.size() == materialValues.size());
     writeXdmf(parameterNames);
     writeHdf5(parameterNames, materialValues);
@@ -38,7 +38,10 @@ class Writer {
   void writeHdf5(const std::vector<std::string>& parameterNames,
                  const std::vector<std::vector<double>>& materialValues);
   void writeXdmf(const std::vector<std::string>& parameterNames);
-  void
-      writeData(hid_t h5file, const std::string& name, const std::vector<hsize_t>& sizes, Hdf5DataType type, const void* data);
+  void writeData(hid_t h5file,
+                 const std::string& name,
+                 const std::vector<hsize_t>& sizes,
+                 Hdf5DataType type,
+                 const void* data);
 };
 #endif

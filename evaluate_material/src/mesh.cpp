@@ -21,7 +21,8 @@ Mesh::Mesh(const std::string& fileName) {
 
   for (unsigned int i = 0; i < nElements; i++) {
     const auto elementVertex = puml.originalCells()[i];
-    std::array<unsigned long, 4> tmp({elementVertex[0], elementVertex[1], elementVertex[2], elementVertex[3]});
+    std::array<unsigned long, 4> tmp(
+        {elementVertex[0], elementVertex[1], elementVertex[2], elementVertex[3]});
     elementVertices.emplace_back(tmp);
   }
 

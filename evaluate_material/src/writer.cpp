@@ -1,20 +1,26 @@
 #include "writer.h"
 
-void Writer::writeData(
-    hid_t h5file, const std::string& name, const std::vector<hsize_t>& sizes, Hdf5DataType type, const void* data) {
+void Writer::writeData(hid_t h5file,
+                       const std::string& name,
+                       const std::vector<hsize_t>& sizes,
+                       Hdf5DataType type,
+                       const void* data) {
   hid_t h5space = H5Screate_simple(sizes.size(), sizes.data(), nullptr);
   checkH5Err(h5space);
 
   hid_t h5data = 0;
   switch (type) {
   case Hdf5DataType::hdf5UInt64:
-    h5data = H5Dcreate(h5file, name.c_str(), H5T_STD_U64LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    h5data = H5Dcreate(
+        h5file, name.c_str(), H5T_STD_U64LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     break;
   case Hdf5DataType::hdf5Int32:
-    h5data = H5Dcreate(h5file, name.c_str(), H5T_STD_I32LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    h5data = H5Dcreate(
+        h5file, name.c_str(), H5T_STD_I32LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     break;
   case Hdf5DataType::hdf5Double:
-    h5data = H5Dcreate(h5file, name.c_str(), H5T_IEEE_F64LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    h5data = H5Dcreate(
+        h5file, name.c_str(), H5T_IEEE_F64LE, h5space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     break;
   }
   checkH5Err(h5data);
@@ -57,21 +63,24 @@ void Writer::writeXdmf(const std::vector<std::string>& parameterNames) {
        << std::endl
        // This should be UInt but for some reason this does not work with
        // binary data
-       << R"(    <DataItem NumberType="Int" Precision="8" Format="HDF" Dimensions=")" << nElements << R"( 4">)"
-       << hdfFileName << R"(:/connect</DataItem>)" << std::endl
+       << R"(    <DataItem NumberType="Int" Precision="8" Format="HDF" Dimensions=")" << nElements
+       << R"( 4">)" << hdfFileName << R"(:/connect</DataItem>)" << std::endl
        << R"(   </Topology>)" << std::endl
-       << R"(   <Geometry name="geo" GeometryType="XYZ" NumberOfElements=")" << nVertices << R"(">)" << std::endl
-       << R"(    <DataItem NumberType="Float" Precision=")" << sizeof(double) << R"(" Format="HDF" Dimensions=")"
-       << nVertices << R"( 3">)" << hdfFileName << R"(:/geometry</DataItem>)" << std::endl
+       << R"(   <Geometry name="geo" GeometryType="XYZ" NumberOfElements=")" << nVertices << R"(">)"
+       << std::endl
+       << R"(    <DataItem NumberType="Float" Precision=")" << sizeof(double)
+       << R"(" Format="HDF" Dimensions=")" << nVertices << R"( 3">)" << hdfFileName
+       << R"(:/geometry</DataItem>)" << std::endl
        << R"(   </Geometry>)" << std::endl
        << R"(   <Attribute Name="group" Center="Cell">)" << std::endl
-       << R"(    <DataItem NumberType="Int" Precision="4" Format="HDF" Dimensions=")" << nElements << R"(">)"
-       << hdfFileName << R"(:/group</DataItem>)" << std::endl
+       << R"(    <DataItem NumberType="Int" Precision="4" Format="HDF" Dimensions=")" << nElements
+       << R"(">)" << hdfFileName << R"(:/group</DataItem>)" << std::endl
        << R"(   </Attribute>)" << std::endl;
   for (const auto& param : parameterNames) {
     xdmf << R"(   <Attribute Name=")" << param << R"(" Center="Cell">)" << std::endl
-         << R"(    <DataItem  NumberType="Float" Precision=")" << sizeof(double) << R"(" Format="HDF" Dimensions=")"
-         << nElements << R"(">)" << hdfFileName << R"(:/)" << param << R"(</DataItem>)" << std::endl
+         << R"(    <DataItem  NumberType="Float" Precision=")" << sizeof(double)
+         << R"(" Format="HDF" Dimensions=")" << nElements << R"(">)" << hdfFileName << R"(:/)"
+         << param << R"(</DataItem>)" << std::endl
          << R"(   </Attribute>)" << std::endl;
   }
   xdmf << "  </Grid>" << std::endl << " </Domain>" << std::endl << "</Xdmf>" << std::endl;

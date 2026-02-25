@@ -7,11 +7,15 @@
 
 class Mesh {
   public:
-  explicit Mesh(std::string const& fileName);
+  explicit Mesh(const std::string& fileName);
   ~Mesh() = default;
   [[nodiscard]] std::vector<std::array<double, 3>> getElementBarycenters() const;
-  [[nodiscard]] const std::vector<std::array<double, 3>>& getVertexCoordinates() const { return vertexCoordinates; };
-  [[nodiscard]] const std::vector<std::array<unsigned long, 4>>& getElementVertices() const { return elementVertices; };
+  [[nodiscard]] const std::vector<std::array<double, 3>>& getVertexCoordinates() const {
+    return vertexCoordinates;
+  };
+  [[nodiscard]] const std::vector<std::array<unsigned long, 4>>& getElementVertices() const {
+    return elementVertices;
+  };
   [[nodiscard]] const std::vector<int>& getElementGroups() const { return elementGroups; };
 
   private:

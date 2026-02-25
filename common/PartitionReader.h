@@ -2,7 +2,8 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  *
  * @section LICENSE
  * Copyright (c) 2017, SeisSol Group
@@ -42,13 +43,13 @@
 #include <string>
 
 class PartitionReader {
-public:
-  explicit PartitionReader(std::string const& fileName);
+  public:
+  explicit PartitionReader(const std::string& fileName);
   ~PartitionReader();
 
   void readPartition(int partition);
 
-	size_t partitions;
+  size_t partitions;
   int* elementSize;
   int* vertexSize;
   int* elementBoundaries;
@@ -57,13 +58,13 @@ public:
   int* elementGroup;
   double* vertexCoordinates;
 
-private:
+  private:
   int ncid;
-	int ncVarElemVertices;
-	int ncVarElemBoundaries;
-	int ncVarElemNeighborRanks;
+  int ncVarElemVertices;
+  int ncVarElemBoundaries;
+  int ncVarElemNeighborRanks;
   int ncVarElemGroup;
-	int ncVarVrtxCoords;
+  int ncVarVrtxCoords;
 };
 
 #endif // PARTITIONREADER_H_

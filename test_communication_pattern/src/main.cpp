@@ -1,14 +1,13 @@
-#include <mpi.h>
-#include <cstdio>
+#include "Comm.h"
+
 #include <cmath>
+#include <cstdio>
 #include <iostream>
+#include <mpi.h>
 #include <utils/args.h>
 #include <utils/logger.h>
 
-#include "Comm.h"
-
-counter_t* readCommMatrix(std::string const& matrixFile)
-{
+counter_t* readCommMatrix(const std::string& matrixFile) {
   int rank, numRanks;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
@@ -20,12 +19,13 @@ counter_t* readCommMatrix(std::string const& matrixFile)
 
   int N = static_cast<int>(sqrt(size / sizeof(counter_t)));
 
-  if (N*N*sizeof(counter_t) != size) {
+  if (N * N * sizeof(counter_t) != size) {
     logError() << "The communication matrix is not a square matrix.";
     return NULL;
   }
   if (N != numRanks) {
-    logError() << "Communication matrix has" << N << "ranks whereas this test was started with" << numRanks << "ranks.";
+    logError() << "Communication matrix has" << N << "ranks whereas this test was started with"
+               << numRanks << "ranks.";
     return NULL;
   }
 
@@ -37,8 +37,7 @@ counter_t* readCommMatrix(std::string const& matrixFile)
   return edges;
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
 
   utils::Args args;
@@ -56,7 +55,7 @@ int main(int argc, char** argv)
 
   counter_t* edges = readCommMatrix(matrixFile);
 
-  size_t messageSize = sizeof(double) * nq * order * (order+1) * (order+2) / 6;
+  size_t messageSize = sizeof(double) * nq * order * (order + 1) * (order + 2) / 6;
   testCommunication(edges, messageSize);
 
   delete[] edges;

@@ -2,7 +2,8 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
@@ -40,33 +41,33 @@
 #ifndef READER_H_
 #define READER_H_
 
+#include "KDTree.h"
+
 #include <string>
 #include <vector>
 
-#include "KDTree.h"
-
 class Mesh {
-public:
-  explicit Mesh(std::string const& fileName);
+  public:
+  explicit Mesh(const std::string& fileName);
   ~Mesh();
 
   void readPartition(int partition);
 
-	size_t partitions;
+  size_t partitions;
   int* elementSize;
   int* vertexSize;
   int* elementBoundaries;
   int* elementVertices;
   double* vertexCoordinates;
 
-private:
+  private:
   int ncid;
-	int ncVarElemVertices;
-	int ncVarElemBoundaries;
-	int ncVarVrtxCoords;
+  int ncVarElemVertices;
+  int ncVarElemBoundaries;
+  int ncVarVrtxCoords;
 };
 
-std::vector<Point> readReceiverFile(std::string const& fileName);
-void writeReceiverFile(KDTree const& tree, std::string const& fileName);
+std::vector<Point> readReceiverFile(const std::string& fileName);
+void writeReceiverFile(const KDTree& tree, const std::string& fileName);
 
 #endif
