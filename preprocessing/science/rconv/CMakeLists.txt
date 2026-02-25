@@ -39,7 +39,6 @@ add_executable(SeisSol-rconv
   src/SRF.cpp)
 
 target_include_directories(SeisSol-rconv PUBLIC src
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../../src" # SeisSol :(
    "${CMAKE_CURRENT_SOURCE_DIR}/../../../submodules/"
 )
 
