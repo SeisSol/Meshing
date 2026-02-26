@@ -224,6 +224,15 @@ class Face:
                 fout.write(struct.pack("<3f", *self.vertex[self.connect[k, i], :]))
             fout.write(struct.pack("<H", 0))
 
+    def __writeVtk(self, fname):
+        import pyvista as pv
+
+        padding = np.full((self.ntriangles, 1), 3)
+        faces = np.hstack((padding, self.connect))
+        mesh = pv.PolyData(self.vertex, faces)
+        mesh.save(fname)
+
+
     def write(self, fname, write_full_vertex_array=True, append=False):
         import os
 
@@ -232,6 +241,8 @@ class Face:
             self.__writeTs(fname, write_full_vertex_array, append)
         elif ext == ".stl":
             self.__writeStl(fname, append)
+        elif ext == ".vtk":
+            self.__writeVtk(fname)
         elif ext == ".bstl":
             self.__writebStl(fname)
         else:
