@@ -1,13 +1,13 @@
 #include "Reader.h"
 
-#include <vector>
-#include <optional>
-
-#include "PUML/PUML.h"
 #include "PUML/Neighbor.h"
+#include "PUML/PUML.h"
 #include "mpi.h"
 
-Mesh::Mesh(const std::string &fileName) {
+#include <optional>
+#include <vector>
+
+Mesh::Mesh(const std::string& fileName) {
   PUML::TETPUML puml;
   puml.setComm(MPI_COMM_WORLD);
   puml.open((fileName + ":/connect").c_str(), (fileName + ":/geometry").c_str());
@@ -30,8 +30,8 @@ Mesh::Mesh(const std::string &fileName) {
   neighbors = std::vector<neighbors_t>(elementSize);
   std::array<int, 4> neighborsRaw{};
 
-  for (auto &vertex : verticesPuml) {
-    const auto *coordinate = vertex.coordinate();
+  for (auto& vertex : verticesPuml) {
+    const auto* coordinate = vertex.coordinate();
     for (int i = 0; i < 3; ++i) {
       vertices[verticesOffset++] = coordinate[i];
     }
@@ -51,15 +51,12 @@ Mesh::Mesh(const std::string &fileName) {
     PUML::Neighbor::face(puml, cell, neighborsRaw.data());
     neighbors_t curNeighbors{};
     for (int face = 0; face < 4; ++face) {
-      curNeighbors[face] = (neighborsRaw[face] >= 0) ? std::optional(neighborsRaw[face]) : std::nullopt;
+      curNeighbors[face] =
+          (neighborsRaw[face] >= 0) ? std::optional(neighborsRaw[face]) : std::nullopt;
       elementBoundaries[cell][face] = decodeBoundaryCondition(puml.cellData(1)[cell], face);
     }
     neighbors[cell] = curNeighbors;
   }
-
-
 }
 
-int decodeBoundaryCondition(int encoded, int faceId) {
-  return (encoded >> (faceId * 8)) & 0xFF;
-}
+int decodeBoundaryCondition(int encoded, int faceId) { return (encoded >> (faceId * 8)) & 0xFF; }

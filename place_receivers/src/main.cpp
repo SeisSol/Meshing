@@ -2,23 +2,24 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  * @author Thomas Ulrich
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -38,25 +39,24 @@
  * @section DESCRIPTION
  **/
 
+#include "Geometry.h"
+#include "Reader.h"
+
 #include <cmath>
 #include <iostream>
 #include <utils/args.h>
 
-#include "Reader.h"
-#include "Geometry.h"
-
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   utils::Args args;
   args.addOption("depth", 'd', "Distance of the receivers to the free surface");
   args.addOption("receivers", 'r', "Receiver locations");
   args.addOption("mesh", 'm', "mesh file");
   args.addOption("output", 'o', "Receiver output file");
 
-	if (args.parse(argc, argv) != utils::Args::Success) {
+  if (args.parse(argc, argv) != utils::Args::Success) {
     return -1;
   }
-  
+
   double depth = args.getArgument<double>("depth");
   std::string receiverFile = args.getArgument<std::string>("receivers");
   std::string meshFile = args.getArgument<std::string>("mesh");
@@ -70,19 +70,20 @@ int main(int argc, char** argv)
   }
 
   KDTree tree(receivers, 1);
-  
+
   Mesh mesh(meshFile);
-  
+
   for (unsigned p = 0; p < mesh.partitions; ++p) {
     if (p % 100 == 0) {
-      std::cout << "Processing partition " << p << " to " << std::min(mesh.partitions, static_cast<size_t>(p+99)) << std::endl;
+      std::cout << "Processing partition " << p << " to "
+                << std::min(mesh.partitions, static_cast<size_t>(p + 99)) << std::endl;
     }
 
     mesh.readPartition(p);
     setElevation(p, depth, mesh, tree);
   }
 
-  writeReceiverFile(tree, receiverOutputFile); 
-  
+  writeReceiverFile(tree, receiverOutputFile);
+
   return 0;
 }

@@ -296,4 +296,3 @@ with open(fname, "w") as fout:
             fout.write("TRGL %d %d %d\n" % (i + j * NX, i + 1 + (j + 1) * NX, i + (j + 1) * NX))
     fout.write("END")
 print(f"done writing {fname}")
-

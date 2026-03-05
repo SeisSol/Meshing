@@ -25,5 +25,3 @@ target_link_libraries(evaluate_easi PUBLIC ${HDF5_C_HL_LIBRARIES} ${HDF5_C_LIBRA
 
 find_package(easi 1.0.0 REQUIRED)
 target_link_libraries(evaluate_easi PUBLIC easi::easi)
-
-

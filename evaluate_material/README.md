@@ -2,7 +2,7 @@
 
 ## Compilation
 
-```
+```bash
 mkdir build && cd build
 cmake ..
 make
@@ -10,7 +10,7 @@ make
 
 ## Usage
 
-```
+```bash
 ./evaluate_easi -m mesh.h5 -e easi.yaml -o material
 ```
 

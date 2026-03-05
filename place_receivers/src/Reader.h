@@ -2,22 +2,23 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -40,33 +41,33 @@
 #ifndef READER_H_
 #define READER_H_
 
+#include "KDTree.h"
+
 #include <string>
 #include <vector>
 
-#include "KDTree.h"
-
 class Mesh {
-public:
-  explicit Mesh(std::string const& fileName);
+  public:
+  explicit Mesh(const std::string& fileName);
   ~Mesh();
-  
+
   void readPartition(int partition);
 
-	size_t partitions;
+  size_t partitions;
   int* elementSize;
   int* vertexSize;
   int* elementBoundaries;
   int* elementVertices;
   double* vertexCoordinates;
-  
-private:
+
+  private:
   int ncid;
-	int ncVarElemVertices;
-	int ncVarElemBoundaries;
-	int ncVarVrtxCoords;
+  int ncVarElemVertices;
+  int ncVarElemBoundaries;
+  int ncVarVrtxCoords;
 };
 
-std::vector<Point> readReceiverFile(std::string const& fileName);
-void writeReceiverFile(KDTree const& tree, std::string const& fileName);
+std::vector<Point> readReceiverFile(const std::string& fileName);
+void writeReceiverFile(const KDTree& tree, const std::string& fileName);
 
 #endif

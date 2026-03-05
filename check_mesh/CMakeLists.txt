@@ -22,4 +22,3 @@ target_compile_definitions(check_mesh PUBLIC USE_MPI)
 find_package(HDF5 REQUIRED COMPONENTS C HL)
 target_include_directories(check_mesh PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(check_mesh PUBLIC ${HDF5_C_HL_LIBRARIES} ${HDF5_C_LIBRARIES})
-

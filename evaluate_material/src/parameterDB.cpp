@@ -25,14 +25,15 @@ easi::Query ParameterDB::generateQuery(const std::vector<std::array<double, DIM>
   return query;
 }
 
-std::pair<std::vector<std::string>, std::vector<std::vector<double>>> ParameterDB::evaluate(easi::Query& query) const {
+std::pair<std::vector<std::string>, std::vector<std::vector<double>>>
+    ParameterDB::evaluate(easi::Query& query) const {
   auto supplied = model->suppliedParameters();
   auto parameters = std::vector<std::string>(supplied.begin(), supplied.end());
   auto adapter = easi::ArraysAdapter<>{};
 
   auto material = std::vector<std::vector<double>>(parameters.size());
   auto it = material.begin();
-  for (auto const& p : parameters) {
+  for (const auto& p : parameters) {
     it->resize(query.numPoints());
     adapter.addBindingPoint(p, it->data());
     ++it;

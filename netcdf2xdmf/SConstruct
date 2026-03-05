@@ -1,4 +1,3 @@
-#!/usr/bin/python
 ##
 # @file
 # This file is part of SeisSol.
@@ -65,7 +64,7 @@ vars.SetCompiler(env)
 libs.find(env, 'netcdf')
 hasAsagi = libs.find(env, 'asagi', required=False, parallel=False)
 if hasAsagi:
-  env.Append(CPPDEFINES=['USE_ASAGI']) 
+  env.Append(CPPDEFINES=['USE_ASAGI'])
 
 env.Tool('cmake')
 

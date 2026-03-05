@@ -1,10 +1,9 @@
 #ifndef PARAMETER_DB_H_
 #define PARAMETER_DB_H_
 
-#include <string>
-
 #include <easi/Component.h>
 #include <easi/Query.h>
+#include <string>
 
 class ParameterDB {
   public:
@@ -12,7 +11,8 @@ class ParameterDB {
   ~ParameterDB();
   [[nodiscard]] easi::Query generateQuery(const std::vector<std::array<double, 3>>& points,
                                           const std::vector<int>& groups) const;
-  std::pair<std::vector<std::string>, std::vector<std::vector<double>>> evaluate(easi::Query& query) const;
+  std::pair<std::vector<std::string>, std::vector<std::vector<double>>>
+      evaluate(easi::Query& query) const;
 
   private:
   easi::Component* model;

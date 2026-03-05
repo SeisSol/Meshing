@@ -1,13 +1,12 @@
 #include "mesh.h"
 
-#include <numeric>
-
 #include <mpi.h>
+#include <numeric>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
-#include "PUML/Neighbor.h"
 #include "PUML/Downward.h"
+#include "PUML/Neighbor.h"
 #pragma clang diagnostic pop
 
 Mesh::Mesh(const std::string& fileName) {
@@ -18,7 +17,7 @@ Mesh::Mesh(const std::string& fileName) {
   std::vector<int> cellIdsAsInFile(numTotalCells);
   std::iota(cellIdsAsInFile.begin(), cellIdsAsInFile.end(), 0);
   puml.addData(cellIdsAsInFile.data(), numTotalCells, PUML::CELL);
-  
+
   // Keep all cells on the same rank
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -40,7 +39,7 @@ bool Mesh::checkNeighbors() const {
     const auto& cell = puml.cells().at(elemIdx);
     const auto bndInfo = puml.cellData(1)[elemIdx];
     const auto cellIdAsInFile = puml.cellData(2)[elemIdx];
-    auto decodeBC = [&bndInfo](std::size_t side) { return (bndInfo >> (side*8)) & 0xFF; };
+    auto decodeBC = [&bndInfo](std::size_t side) { return (bndInfo >> (side * 8)) & 0xFF; };
 
     PUML::Downward::faces(puml, cell, faceids);
     PUML::Neighbor::face(puml, elemIdx, neighbors);
@@ -49,23 +48,31 @@ bool Mesh::checkNeighbors() const {
     for (size_t side = 0; side < 4; side++) {
       const auto& face = puml.faces()[faceids[side]];
       const auto sideBC = decodeBC(side);
-      // if a face is an internal face, it has to have a neighbor on either this rank or somewhere else:
+      // if a face is an internal face, it has to have a neighbor on either this
+      // rank or somewhere else:
       if (bcToType(sideBC) == BCType::internal) {
         if (neighbors[side] < 0 && !face.isShared()) {
-          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighboring element doesn't exist";
+          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a"
+                    << bcToString(sideBC)
+                    << "boundary condition, but the neighboring element "
+                       "doesn't exist";
           result = false;
         }
       }
       // external boundaries must not have neighboring elements:
       else if (bcToType(sideBC) == BCType::external) {
         if (neighbors[side] >= 0 || face.isShared()) {
-          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a" << bcToString(sideBC) << "boundary condition, but the neighboring element is not flagged -1";
+          logInfo() << "Element" << cellIdAsInFile << ", side" << side << " has a"
+                    << bcToString(sideBC)
+                    << "boundary condition, but the neighboring element is not "
+                       "flagged -1";
           result = false;
         }
       }
       // ignore unknown boundary conditions and warn
       else {
-        logWarning() << "Element" << cellIdAsInFile << ", side" << side << " has a boundary condition, which I don't understand" << sideBC;
+        logWarning() << "Element" << cellIdAsInFile << ", side" << side
+                     << " has a boundary condition, which I don't understand" << sideBC;
       }
     }
   }

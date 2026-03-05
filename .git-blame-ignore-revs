@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 SeisSol Group
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-LicenseComments: Full text under /LICENSE and /LICENSES/
+#
+# SPDX-FileContributor: Author lists in /AUTHORS and /CITATION.cff
+
+# apply pre-commit (whitespaces etc.)
+412e0d94440dd4371f6d269f16ef6b50396e2907
+# apply clang-format
+c007c326b54aa0f43deea770ba17ad465eb3d107

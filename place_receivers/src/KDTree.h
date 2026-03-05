@@ -2,22 +2,23 @@
  * @file
  * This file is part of SeisSol.
  *
- * @author Carsten Uphoff (c.uphoff AT tum.de, http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
+ * @author Carsten Uphoff (c.uphoff AT tum.de,
+ * http://www5.in.tum.de/wiki/index.php/Carsten_Uphoff,_M.Sc.)
  *
  * @section LICENSE
  * Copyright (c) 2016, SeisSol Group
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
@@ -52,67 +53,65 @@ union Point {
 };
 
 struct Receiver {
-	Point point;
-	bool found{false};
+  Point point;
+  bool found{false};
 };
 
 class KDTree {
-public:
-	KDTree(std::vector<Point> const& points, int maxLeafSize);
-	
-	template<typename Support, typename Action>
-	void search(Support const& support, Action& action)
-	{
-		searchTree<Support, Action>(0, support, action);
-	}
-	
-	inline std::vector<Receiver> points() const { return data; }
-	inline int index(int r) const { return idx[r]; }
-  inline int numPoints() const { return nodes[0].n;}
+  public:
+  KDTree(const std::vector<Point>& points, int maxLeafSize);
 
-private:
-	int leftChild(int k) const { return 2*k + 1; }
-	int rightChild(int k) const { return 2*k + 2; }
+  template <typename Support, typename Action>
+  void search(const Support& support, Action& action) {
+    searchTree<Support, Action>(0, support, action);
+  }
 
-	struct Node {
+  inline std::vector<Receiver> points() const { return data; }
+  inline int index(int r) const { return idx[r]; }
+  inline int numPoints() const { return nodes[0].n; }
+
+  private:
+  int leftChild(int k) const { return 2 * k + 1; }
+  int rightChild(int k) const { return 2 * k + 2; }
+
+  struct Node {
     Node() : isLeaf(false) {}
-		double pivot;
-		int start;
-		int n;
-		int splitdim;
-		bool isLeaf;
-	};
-	std::vector<Node> nodes;
-	
-	void swap(int i, int j);
-	int partition(int left, int right, int pivotIdx, int splitdim);
-	void buildTree(int k, int splitdim);
-	
-	template<typename Support, typename Action>
-	void searchTree(int k, Support const& support, Action& action);
+    double pivot;
+    int start;
+    int n;
+    int splitdim;
+    bool isLeaf;
+  };
+  std::vector<Node> nodes;
 
-	std::vector<Receiver> data;
-	std::vector<int> idx;
-	int p;
-	int maxLeafN;
+  void swap(int i, int j);
+  int partition(int left, int right, int pivotIdx, int splitdim);
+  void buildTree(int k, int splitdim);
+
+  template <typename Support, typename Action>
+  void searchTree(int k, const Support& support, Action& action);
+
+  std::vector<Receiver> data;
+  std::vector<int> idx;
+  int p;
+  int maxLeafN;
 };
 
-template<typename Support, typename Action>
-void KDTree::searchTree(int k, Support const& support, Action& action)
-{
-	const auto& node = nodes[k];
-	if (node.isLeaf) {
-		for (int i = node.start; i < node.start + node.n; ++i) {
-      		action(data[i]);
-		}
-	} else {
-		if (support(node.splitdim, 0) <= node.pivot) {
-			searchTree<Support, Action>(leftChild(k), support, action);
-		}
-		if (support(node.splitdim, 1) >= node.pivot) {
-			searchTree<Support, Action>(rightChild(k), support, action);			
-		}
-	}
+template <typename Support, typename Action>
+void KDTree::searchTree(int k, const Support& support, Action& action) {
+  const auto& node = nodes[k];
+  if (node.isLeaf) {
+    for (int i = node.start; i < node.start + node.n; ++i) {
+      action(data[i]);
+    }
+  } else {
+    if (support(node.splitdim, 0) <= node.pivot) {
+      searchTree<Support, Action>(leftChild(k), support, action);
+    }
+    if (support(node.splitdim, 1) >= node.pivot) {
+      searchTree<Support, Action>(rightChild(k), support, action);
+    }
+  }
 }
 
 #endif
