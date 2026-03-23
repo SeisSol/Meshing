@@ -1,7 +1,8 @@
-from collections import defaultdict
+import os
+
 import numpy as np
-from tqdm import tqdm, trange
 import pyvista as pv
+from tqdm import tqdm, trange
 
 
 class Face:
@@ -10,6 +11,20 @@ class Face:
         self.vertex = vertex
         self.local_vid_lookup = {}
         self.ntriangles = self.connect.shape[0]
+
+    @classmethod
+    def from_file(cls, fname):
+        ext = os.path.splitext(fname)[1].lower()
+
+        if ext in [".ts"]:
+            with open(fname, "r") as fid:
+                return cls.from_ts(fid)
+
+        elif ext in [".vtk", ".vtu", ".xdmf", ".ply", ".stl", ".obj"]:
+            return cls.from_pyvista(fname)
+
+        else:
+            raise ValueError(f"Unsupported file format: {ext}")
 
     @classmethod
     def from_pyvista(self, fname):
@@ -28,7 +43,6 @@ class Face:
         xyzl = []
         vid = {}
         trl = []
-        prev_vert = -1
         ivertex = 0
         line = fid.readline()
         if not line:

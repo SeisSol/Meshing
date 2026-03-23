@@ -9,16 +9,12 @@ parser = argparse.ArgumentParser(description="refine and smooth")
 parser.add_argument("input_file", help="surface in ts file format")
 parser.add_argument(
     "--N",
-    nargs=1,
-    metavar=("N"),
     type=int,
     required=True,
     help="number of initial refine steps",
 )
 parser.add_argument(
     "--P",
-    nargs=1,
-    metavar=("P"),
     type=int,
     required=True,
     help="number of and refine/smoothing steps",
@@ -42,8 +38,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-fid = open(args.input_file)
-myFace = Face.from_ts(fid)
+myFace = Face.from_file(args.input_file)
 
 if args.remesh_first:
     """
@@ -72,10 +67,9 @@ if args.remesh_first:
 else:
     a = trimesh.Trimesh(vertices=myFace.vertex, faces=myFace.connect)
 
-
-for i in range(args.N[0]):
+for i in range(args.N):
     a = a.subdivide()
-for i in range(args.P[0]):
+for i in range(args.P):
     a = a.subdivide()
 
     if args.fix_boundary:
@@ -100,4 +94,4 @@ for i in range(args.P[0]):
 
 myFace = Face(a.vertices, a.faces)
 basename, ext = os.path.splitext(args.input_file)
-myFace.write(f"{basename}_refined_smooth_{args.N[0]}{ext}")
+myFace.write(f"{basename}_refined_smooth_{args.N}.ts")
