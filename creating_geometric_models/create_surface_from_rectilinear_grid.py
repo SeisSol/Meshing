@@ -9,7 +9,7 @@ from Grid import Grid
 parser = argparse.ArgumentParser(description="create surface from a (possibly sparse, e.g. Slab2.0 dataset) structured dataset (e.g. netcdf)")
 parser.add_argument("input_file", help="netcdf file")
 parser.add_argument("output_file", help="output file (ext in stl, bstl, ts)")
-parser.add_argument("--subsample" type=int, metavar=("onesample_every"), default=[1], help="use only one value every onesample_every in both direction")
+parser.add_argument("--downsample", type=int, metavar=("onesample_every"), default=1, help="use only one value every onesample_every in both direction")
 parser.add_argument("--objectname", metavar=("objectname"), help="name of the surface in gocad")
 parser.add_argument("--hole", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="isolate a hole in surface defined by x0<=x<=x1 and y0<=y<=y1 (stl and ts output only)", type=float)
 parser.add_argument("--crop", nargs=4, metavar=(("x0"), ("x1"), ("y0"), ("y1")), help="select only surfaces in x0<=x<=x1 and y0<=y<=y1", type=float)
@@ -31,7 +31,7 @@ if not args.objectname:
 else:
     args.objectname = args.objectname
 
-structured_grid = Grid(args.input_file, args.subsample)
+structured_grid = Grid(args.input_file, args.downsample)
 structured_grid.crop(args.crop)
 
 if args.change_zero_elevation:
