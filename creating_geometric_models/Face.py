@@ -15,8 +15,11 @@ class Face:
     def from_pyvista(self, fname):
         mesh = pv.read(fname)
         mesh = mesh.clean(tolerance=0.1)
+        if mesh.faces is None:
+            mesh = mesh.extract_surface()
         faces = mesh.faces.reshape((-1, 4))[:, 1:]
         myFace = Face(mesh.points, faces)
+
         return myFace
 
     @classmethod
@@ -231,7 +234,6 @@ class Face:
         faces = np.hstack((padding, self.connect))
         mesh = pv.PolyData(self.vertex, faces)
         mesh.save(fname)
-
 
     def write(self, fname, write_full_vertex_array=True, append=False):
         import os
