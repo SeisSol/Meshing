@@ -263,4 +263,8 @@ class Face:
             self.__writebStl(fname)
         else:
             raise ValueError("format not supported", ext)
-        print("done writing " + fname)
+        if append:
+            message = f"Done appending content to {fname}"
+        else:
+            message = f"Done writing {fname}"
+        print(message)

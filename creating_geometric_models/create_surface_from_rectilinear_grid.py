@@ -65,4 +65,4 @@ else:
         myFace = Face(vertex=structured_grid.vertex, connect=structured_grid.connect[idtr, :])
         if structured_grid.is_sparse:
             myFace.reindex(structured_grid.vid_lookup)
-        myFace.write(f"{basename}{sid}{ext}", write_full_vertex_array=False)
+        myFace.write(f"{basename}{ext}", write_full_vertex_array=False, append=sid > 0)
