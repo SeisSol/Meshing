@@ -3,14 +3,17 @@ import argparse
 
 parser = argparse.ArgumentParser(description="project ts file")
 parser.add_argument("ts_file", help="ts filename")
-parser.add_argument("--proj", nargs=1, metavar=("projname"), help="transform vertex array to projected system.\
- projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)")
+parser.add_argument("--inputCRS", metavar=("projname"), help="input CRS", default = "epsg:4326")
+parser.add_argument("--proj", metavar=("projname"), help="transform vertex array to projected system.\
+ projname: name of the (projected) Coordinate Reference System (CRS) (e.g. EPSG:32646 for UTM46N)", required=True)
+
+
 args = parser.parse_args()
 
 # set projection
 
 from pyproj import Transformer
-transformer = Transformer.from_crs("epsg:4326", args.proj[0], always_xy=True)
+transformer = Transformer.from_crs(args.inputCRS, args.proj, always_xy=True)
 
 # read Ts file
 fid = open(args.ts_file)

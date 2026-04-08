@@ -47,6 +47,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--rotate",
+    metavar=("angle_in_degree"),
+    help="rotate box around it center and Uz",
+    type=float,
+)
+
+parser.add_argument(
     "--shrink",
     nargs=1,
     metavar=("shrink_factor"),
@@ -107,12 +114,26 @@ with pygmsh.occ.Geometry() as geom:
     xwidth = xmax - xmin
     ywidth = ymax - ymin
     height = args.zdim[1] - zmin
+
     box_origin = [
         xmin + 0.5 * (1 - args.shrink[0]) * xwidth,
         ymin + 0.5 * (1 - args.shrink[0]) * ywidth,
         args.zdim[0],
     ]
     box_dimension = [args.shrink[0] * xwidth, args.shrink[0] * ywidth, height]
-    geom.add_box(box_origin, box_dimension, args.meshSize[0])
+    box = geom.add_box(box_origin, box_dimension, args.meshSize[0])
+
+    if args.rotate:
+        center = [
+            box_origin[0] + 0.5 * box_dimension[0],
+            box_origin[1] + 0.5 * box_dimension[1],
+            box_origin[2] + 0.5 * box_dimension[2],
+        ]
+
+        angle_rad = np.radians(args.rotate)
+        axis_vector = [0.0, 0.0, 1.0]
+
+        geom.rotate(box, center, angle_rad, axis_vector)
+
     mesh = geom.generate_mesh(dim=2)
     mesh.write(args.output_file)

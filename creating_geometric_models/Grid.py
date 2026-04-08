@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from netCDF4 import Dataset
-
+from tqdm import tqdm
 
 class Grid:
     def __init__(self, fname, downsample):
@@ -53,9 +53,22 @@ class Grid:
         xvar = self.determine_netcdf_variables(["lon", "x"])
         yvar = self.determine_netcdf_variables(["lat", "y"])
         zvar = self.determine_netcdf_variables(["elevation", "z", "Band1"])
+
+        zvar_obj = fh.variables[zvar]
+        units = getattr(zvar_obj, "units", "").lower()
+
+        scale = 1.0  # default: meters
+
+        if units in ["m", "meter", "meters", "metre", "metres"]:
+            scale = 1.0
+        elif units in ["km", "kilometer", "kilometers"]:
+            scale = 1e3
+        else:
+            print(f"Warning: unknown elevation unit '{units}', assuming meters")
+
         self.x = fh.variables[xvar][0::downsample]
         self.y = fh.variables[yvar][0::downsample]
-        self.z = fh.variables[zvar][0::downsample, 0::downsample].astype(float)
+        self.z = fh.variables[zvar][0::downsample, 0::downsample].astype(float) * scale
 
         # transpose z if z was given as (lon, lat)
         dim_name_y = fh.variables[yvar].dimensions
@@ -64,7 +77,7 @@ class Grid:
             self.z = self.z.T
 
         if np.ma.is_masked(self.z):
-            self.z = np.ma.filled(self.z, float("nan")) * 1e3
+            self.z = np.ma.filled(self.z, float("nan"))
             self.is_sparse = True
         self.compute_nx_ny()
 
@@ -194,7 +207,7 @@ class Grid:
         if argHole:
             x0, x1, y0, y1 = argHole
             print("tagging hole...")
-            for k in range(nconnect):
+            for k in tqdm(range(nconnect)):
                 coords = self.vertex[self.connect[k, :], 0:2]
                 xmin = min(coords[:, 0])
                 xmax = max(coords[:, 0])
@@ -208,12 +221,12 @@ class Grid:
                 raise ValueError("no hole was tagged")
             print("done tagging hole")
 
-    def smooth(self, zrange):
+    def smooth(self, zrange, sig):
         "Smooth bathymetry in range +- zrange"
         "This is useful when preprocessing bathymetry data before intersection"
         import scipy.ndimage as ndimage
 
-        z_smooth = ndimage.gaussian_filter(self.z, sigma=(1, 1), order=0)
+        z_smooth = ndimage.gaussian_filter(self.z, sigma=(sig, sig), order=0)
         ids = np.where(abs(self.z) < zrange)
         self.z[ids] = z_smooth[ids]
 
