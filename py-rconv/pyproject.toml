@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rconv"
+version = "0.1.0"
+description = "Convert SRF kinematic rupture models to SeisSol's NetCDF Rupture Format (NRF)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "BSD-3-Clause" }
+authors = [
+    { name = "SeisSol Group" },
+]
+keywords = ["seismology", "srf", "nrf", "seissol", "rupture", "earthquake"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pyproj>=3.4",
+    "netCDF4>=1.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+]
+
+[project.scripts]
+rconv = "rconv.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/SeisSol/SeisSol"
+Documentation = "https://seissol.readthedocs.io/en/latest/standard-rupture-format.html"
+
+[tool.setuptools.packages.find]
+where = ["src"]
